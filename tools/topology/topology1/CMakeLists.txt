@@ -293,6 +293,9 @@ set(TPLGS
 	"sof-rn-rt5682-max98360\;sof-rn-rt5682-max98360"
 	"sof-acp-rmb\;sof-acp-rmb"
 	"sof-acp-rmb-dmic4ch\;sof-acp-rmb-dmic4ch"
+	"sof-acp-rmb-tdm8ch-dmic4ch\;sof-acp-rmb-tdm8ch-dmic4ch"
+	"sof-acp-rmb-tdm8ch-dmic2ch-nuvoton\;sof-acp-rmb-tdm8ch-dmic2ch-nuvoton"
+	"sof-acp-rmb-tdm8ch-dmic4ch-nuvoton\;sof-acp-rmb-tdm8ch-dmic4ch-nuvoton"
 	"sof-acp-rmb\;sof-rmb-rt5682s-rt1019"
 	"sof-acp-rmb\;sof-rmb-nau8825-max9860"
 )
