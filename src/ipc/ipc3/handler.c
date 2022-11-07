@@ -254,7 +254,10 @@ static int ipc_stream_pcm_params(uint32_t stream)
 		 */
 		pipe_dbg(pcm_dev->cd->pipeline,
 			 "ipc: ignore PCM param change request on an active pipeline");
-		return 0;
+		/*To resolve the HS playback not happening when
+		 *speaker is played first in tdm use case.
+		 */
+		break;
 	}
 
 #if CONFIG_HOST_PTABLE
