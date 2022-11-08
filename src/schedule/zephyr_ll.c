@@ -431,8 +431,11 @@ static int zephyr_ll_task_cancel(void *data, struct task *task)
 	 * kept atomic, so we have to lock here too.
 	 */
 	zephyr_ll_lock(sch, &flags);
-	if (task->state != SOF_TASK_STATE_FREE)
+	if (task->state != SOF_TASK_STATE_FREE) {
 		task->state = SOF_TASK_STATE_CANCEL;
+		/* let domain know that a task has been cancelled */
+		domain_task_cancel(sch->ll_domain, sch->n_tasks - 1);
+	}
 	zephyr_ll_unlock(sch, &flags);
 
 	return 0;
@@ -498,12 +501,6 @@ int zephyr_ll_task_init(struct task *task,
 int zephyr_ll_scheduler_init(struct ll_schedule_domain *domain)
 {
 	struct zephyr_ll *sch;
-
-	if (domain->type != SOF_SCHEDULE_LL_TIMER) {
-		tr_warn(&ll_tr, "zephyr_ll_scheduler_init(): unsupported domain %u",
-			domain->type);
-		return -EINVAL;
-	}
 
 	/* initialize per-core scheduler private data */
 	sch = rmalloc(SOF_MEM_ZONE_SYS, 0, SOF_MEM_CAPS_RAM, sizeof(*sch));

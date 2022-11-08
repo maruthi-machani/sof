@@ -197,7 +197,12 @@ int dai_get_handshake(struct dai *dai, int direction, int stream_id)
 /* called from ipc/ipc3/dai.c and ipc/ipc4/dai.c */
 int dai_get_fifo_depth(struct dai *dai, int direction)
 {
-	const struct dai_properties *props = dai_get_properties(dai->dev, direction, 0);
+	const struct dai_properties *props;
+
+	if (!dai)
+		return 0;
+
+	props = dai_get_properties(dai->dev, direction, 0);
 
 	return props->fifo_depth;
 }
@@ -929,6 +934,7 @@ static int dai_reset(struct comp_dev *dev)
 		dai_dma_release(dev);
 
 	dma_sg_free(&config->elem_array);
+	rfree(dd->z_config->head_block);
 	rfree(dd->z_config);
 
 	if (dd->dma_buffer) {
@@ -1002,6 +1008,11 @@ static int dai_comp_trigger_internal(struct comp_dev *dev, int cmd)
 		if (dd->xrun == 0) {
 			/* recover valid start position */
 			ret = dma_stop(dd->chan->dma->z_dev, dd->chan->index);
+			if (ret < 0)
+				return ret;
+
+			/* dma_config needed after stop */
+			ret = dma_config(dd->chan->dma->z_dev, dd->chan->index, dd->z_config);
 			if (ret < 0)
 				return ret;
 
@@ -1321,7 +1332,12 @@ static int dai_ts_stop_op(struct comp_dev *dev)
 
 uint32_t dai_get_init_delay_ms(struct dai *dai)
 {
-	const struct dai_properties *props = dai_get_properties(dai->dev, 0, 0);
+	const struct dai_properties *props;
+
+	if (!dai)
+		return 0;
+
+	props = dai_get_properties(dai->dev, 0, 0);
 
 	return props->reg_init_delay;
 }
