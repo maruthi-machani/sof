@@ -7,7 +7,6 @@
 
 #include <sof/audio/buffer.h>
 #include <sof/audio/component_ext.h>
-#include <sof/audio/dai_copier.h>
 #include <sof/audio/ipc-config.h>
 #include <sof/common.h>
 #include <sof/drivers/alh.h>
@@ -31,44 +30,10 @@
 
 LOG_MODULE_DECLARE(ipc, CONFIG_SOF_LOG_LEVEL);
 
-void dai_set_link_hda_config(uint16_t *link_config,
-			     struct ipc_config_dai *common_config,
-			     const void *spec_config)
-{
-#if defined(CONFIG_ACE_VERSION_2_0)
-	const struct ipc4_audio_format *out_fmt = common_config->out_fmt;
-	union hdalink_cfg link_cfg;
-
-	switch (common_config->type) {
-	case SOF_DAI_INTEL_SSP:
-		link_cfg.full = 0;
-		link_cfg.part.dir = common_config->direction;
-		link_cfg.part.stream = common_config->host_dma_config->stream_id;
-		break;
-	case SOF_DAI_INTEL_DMIC:
-		link_cfg.full = 0;
-		if (out_fmt->depth == IPC4_DEPTH_16BIT) {
-			/* 16bit dmic packs two 16bit samples into single 32bit word
-			 * fw needs to adjust channel count to match final sample
-			 * group size
-			 */
-			link_cfg.part.hchan = (out_fmt->channels_count - 1) / 2;
-		} else {
-			link_cfg.part.hchan = out_fmt->channels_count - 1;
-		}
-		link_cfg.part.stream = common_config->host_dma_config->stream_id;
-		break;
-	default:
-		/* other types of DAIs not need link_config */
-		return;
-	}
-	*link_config = link_cfg.full;
-#endif
-}
-
-int dai_config_dma_channel(struct dai_data *dd, struct comp_dev *dev, const void *spec_config)
+int dai_config_dma_channel(struct comp_dev *dev, const void *spec_config)
 {
 	const struct ipc4_copier_module_cfg *copier_cfg = spec_config;
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct ipc_config_dai *dai = &dd->ipc_config;
 	int channel;
 
@@ -77,10 +42,6 @@ int dai_config_dma_channel(struct dai_data *dd, struct comp_dev *dev, const void
 		COMPILER_FALLTHROUGH;
 	case SOF_DAI_INTEL_DMIC:
 		channel = 0;
-#if defined(CONFIG_ACE_VERSION_2_0)
-		if (dai->host_dma_config->pre_allocated_by_host)
-			channel = dai->host_dma_config->dma_channel_id;
-#endif
 		break;
 	case SOF_DAI_INTEL_HDA:
 		channel = copier_cfg->gtw_cfg.node_id.f.v_index;
@@ -101,8 +62,9 @@ int dai_config_dma_channel(struct dai_data *dd, struct comp_dev *dev, const void
 	return channel;
 }
 
-int ipc_dai_data_config(struct dai_data *dd, struct comp_dev *dev)
+int ipc_dai_data_config(struct comp_dev *dev)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct ipc_config_dai *dai = &dd->ipc_config;
 	struct ipc4_copier_module_cfg *copier_cfg = dd->dai_spec_config;
 	struct dai *dai_p = dd->dai;
@@ -176,8 +138,10 @@ int ipc_comp_dai_config(struct ipc *ipc, struct ipc_config_dai *common_config,
 	return 0;
 }
 
-void dai_dma_release(struct dai_data *dd, struct comp_dev *dev)
+void dai_dma_release(struct comp_dev *dev)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
+
 	/* cannot configure DAI while active */
 	if (dev->state == COMP_STATE_ACTIVE) {
 		comp_info(dev, "dai_config(): Component is in active state. Ignore resetting");
@@ -207,11 +171,17 @@ void dai_dma_release(struct dai_data *dd, struct comp_dev *dev)
 		 */
 #if CONFIG_ZEPHYR_NATIVE_DRIVERS
 		/* if reset is after pause dma has already been stopped */
-		dma_stop(dd->chan->dma->z_dev, dd->chan->index);
+		if (dev->state != COMP_STATE_PAUSED)
+			dma_stop(dd->chan->dma->z_dev, dd->chan->index);
 
+		/* remove callback */
+		notifier_unregister(dev, dd->chan, NOTIFIER_ID_DMA_COPY);
 		dma_release_channel(dd->chan->dma->z_dev, dd->chan->index);
 #else
 		dma_stop_legacy(dd->chan);
+
+		/* remove callback */
+		notifier_unregister(dev, dd->chan, NOTIFIER_ID_DMA_COPY);
 		dma_channel_put_legacy(dd->chan);
 #endif
 		dd->chan->dev_data = NULL;
@@ -219,8 +189,9 @@ void dai_dma_release(struct dai_data *dd, struct comp_dev *dev)
 	}
 }
 
-void dai_release_llp_slot(struct dai_data *dd)
+void dai_release_llp_slot(struct comp_dev *dev)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct ipc4_llp_reading_slot slot;
 	k_spinlock_key_t key;
 
@@ -282,8 +253,9 @@ static int dai_get_unused_llp_slot(struct comp_dev *dev,
 	return offset;
 }
 
-static int dai_init_llp_info(struct dai_data *dd, struct comp_dev *dev)
+static int dai_init_llp_info(struct comp_dev *dev)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct ipc4_copier_module_cfg *copier_cfg;
 	union ipc4_connector_node_id node;
 	int ret;
@@ -311,10 +283,11 @@ static int dai_init_llp_info(struct dai_data *dd, struct comp_dev *dev)
 	return 0;
 }
 
-int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai *common_config,
+int dai_config(struct comp_dev *dev, struct ipc_config_dai *common_config,
 	       const void *spec_config)
 {
 	const struct ipc4_copier_module_cfg *copier_cfg = spec_config;
+	struct dai_data *dd = comp_get_drvdata(dev);
 	int size;
 	int ret;
 
@@ -340,14 +313,14 @@ int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai 
 
 #if CONFIG_COMP_DAI_GROUP
 	if (common_config->group_id) {
-		ret = dai_assign_group(dd, dev, common_config->group_id);
+		ret = dai_assign_group(dev, common_config->group_id);
 
 		if (ret)
 			return ret;
 	}
 #endif
 	/* do nothing for asking for channel free, for compatibility. */
-	if (dai_config_dma_channel(dd, dev, spec_config) == DMA_CHAN_INVALID)
+	if (dai_config_dma_channel(dev, spec_config) == DMA_CHAN_INVALID)
 		return 0;
 
 	dd->dai_dev = dev;
@@ -369,7 +342,7 @@ int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai 
 		}
 	}
 
-	ret = dai_init_llp_info(dd, dev);
+	ret = dai_init_llp_info(dev);
 	if (ret < 0)
 		return ret;
 
@@ -377,9 +350,9 @@ int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai 
 }
 
 #if CONFIG_ZEPHYR_NATIVE_DRIVERS
-int dai_zephyr_position(struct dai_data *dd, struct comp_dev *dev,
-			struct sof_ipc_stream_posn *posn)
+int dai_position(struct comp_dev *dev, struct sof_ipc_stream_posn *posn)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct dma_status status;
 	int ret;
 
@@ -398,15 +371,9 @@ int dai_zephyr_position(struct dai_data *dd, struct comp_dev *dev,
 	return 0;
 }
 
-int dai_position(struct comp_dev *dev, struct sof_ipc_stream_posn *posn)
+void dai_dma_position_update(struct comp_dev *dev)
 {
 	struct dai_data *dd = comp_get_drvdata(dev);
-
-	return dai_zephyr_position(dd, dev, posn);
-}
-
-void dai_dma_position_update(struct dai_data *dd, struct comp_dev *dev)
-{
 	struct ipc4_llp_reading_slot slot;
 	struct dma_status status;
 	int ret;
@@ -429,9 +396,9 @@ void dai_dma_position_update(struct dai_data *dd, struct comp_dev *dev)
 	mailbox_sw_regs_write(dd->slot_info.reg_offset, &slot, sizeof(slot));
 }
 #else
-int dai_zephyr_position(struct dai_data *dd, struct comp_dev *dev,
-			struct sof_ipc_stream_posn *posn)
+int dai_position(struct comp_dev *dev, struct sof_ipc_stream_posn *posn)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct dma_chan_status status;
 
 	/* total processed bytes count */
@@ -446,15 +413,9 @@ int dai_zephyr_position(struct dai_data *dd, struct comp_dev *dev,
 	return 0;
 }
 
-int dai_position(struct comp_dev *dev, struct sof_ipc_stream_posn *posn)
+void dai_dma_position_update(struct comp_dev *dev)
 {
 	struct dai_data *dd = comp_get_drvdata(dev);
-
-	return dai_zephyr_position(dd, dev, posn);
-}
-
-void dai_dma_position_update(struct dai_data *dd, struct comp_dev *dev)
-{
 	struct ipc4_llp_reading_slot slot;
 	struct dma_chan_status status;
 	uint32_t llp_data[2];

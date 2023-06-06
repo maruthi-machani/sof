@@ -44,11 +44,16 @@ struct comp_buffer *buffer_new(const struct sof_ipc_buffer *desc)
 		desc->size, desc->comp.pipeline_id, desc->comp.id, desc->flags);
 
 	/* allocate buffer */
-	buffer = buffer_alloc(desc->size, desc->caps, desc->flags, PLATFORM_DCACHE_ALIGN);
+	buffer = buffer_alloc(desc->size, desc->caps, PLATFORM_DCACHE_ALIGN);
 	if (buffer) {
 		buffer->id = desc->comp.id;
 		buffer->pipeline_id = desc->comp.pipeline_id;
 		buffer->core = desc->comp.core;
+
+		buffer->stream.underrun_permitted = desc->flags &
+						    SOF_BUF_UNDERRUN_PERMITTED;
+		buffer->stream.overrun_permitted = desc->flags &
+						   SOF_BUF_OVERRUN_PERMITTED;
 
 		memcpy_s(&buffer->tctx, sizeof(struct tr_ctx),
 			 &buffer_tr, sizeof(struct tr_ctx));
@@ -82,16 +87,16 @@ static void comp_update_params(uint32_t flag,
 			       struct comp_buffer __sparse_cache *buffer)
 {
 	if (flag & BUFF_PARAMS_FRAME_FMT)
-		params->frame_fmt = audio_stream_get_frm_fmt(&buffer->stream);
+		params->frame_fmt = buffer->stream.frame_fmt;
 
 	if (flag & BUFF_PARAMS_BUFFER_FMT)
 		params->buffer_fmt = buffer->buffer_fmt;
 
 	if (flag & BUFF_PARAMS_CHANNELS)
-		params->channels = audio_stream_get_channels(&buffer->stream);
+		params->channels = buffer->stream.channels;
 
 	if (flag & BUFF_PARAMS_RATE)
-		params->rate = audio_stream_get_rate(&buffer->stream);
+		params->rate = buffer->stream.rate;
 }
 
 int comp_verify_params(struct comp_dev *dev, uint32_t flag,
@@ -140,7 +145,7 @@ int comp_verify_params(struct comp_dev *dev, uint32_t flag,
 		buffer_set_params(buf_c, params, BUFFER_UPDATE_FORCE);
 
 		/* set component period frames */
-		component_set_nearest_period_frames(dev, audio_stream_get_rate(&buf_c->stream));
+		component_set_nearest_period_frames(dev, buf_c->stream.rate);
 
 		buffer_release(buf_c);
 	} else {
@@ -162,7 +167,7 @@ int comp_verify_params(struct comp_dev *dev, uint32_t flag,
 					source_list);
 
 		buf_c = buffer_acquire(sinkb);
-		component_set_nearest_period_frames(dev, audio_stream_get_rate(&buf_c->stream));
+		component_set_nearest_period_frames(dev, buf_c->stream.rate);
 		buffer_release(buf_c);
 	}
 

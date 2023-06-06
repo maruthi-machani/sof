@@ -14,9 +14,8 @@
 # docker run -it  -v <insert sof dir here>:/home/sof/work/sof.git --user `id -u` sof ./incremental.sh
 #
 
-FROM ubuntu:22.04
-# pick random high value to intentionally mismatch local UID
-ARG UID=1999
+FROM ubuntu:20.04
+ARG UID=1000
 
 ARG host_http_proxy
 ARG host_https_proxy
@@ -63,11 +62,7 @@ ARG CLONE_DEFAULTS="--depth 5"
 
 # Set up sof user
 RUN useradd --create-home -d /home/sof -u $UID -G sudo sof && \
-	echo 'sof ALL = NOPASSWD: ALL' > /etc/sudoers.d/sof && \
-	chmod 0440 /etc/sudoers.d/sof && \
 	echo "sof:test0000" | chpasswd && adduser sof sudo
-# allow others to read/traverse sof home
-RUN chmod o+rx /home/sof
 ENV HOME /home/sof
 
 # Use ToT alsa utils for the latest topology patches.
@@ -93,7 +88,7 @@ RUN cd "$HOME" && \
 	git clone $CLONE_DEFAULTS --branch sof-gcc10x $CT_NG_REPO && \
 	cd crosstool-ng && \
 	./bootstrap && ./configure --prefix=`pwd` && make && make install && \
-	for arch in byt hsw apl cnl imx imx8m imx8ulp rn rmb mt8186 mt8195; do \
+	for arch in imx imx8m imx8ulp rn rmb mt8186 mt8195; do \
 		echo "$arch: ct-ng build start..." && \
 		cp config-${arch}-gcc10.2-gdb9 .config && \
 		# replace the build dist to save space
@@ -104,10 +99,6 @@ RUN cd "$HOME" && \
 	done && \
 	echo "Stage2: xtensa-overlay, crosstool-ng are done!"
 
-ENV PATH="/home/sof/work/xtensa-byt-elf/bin:${PATH}"
-ENV PATH="/home/sof/work/xtensa-hsw-elf/bin:${PATH}"
-ENV PATH="/home/sof/work/xtensa-apl-elf/bin:${PATH}"
-ENV PATH="/home/sof/work/xtensa-cnl-elf/bin:${PATH}"
 ENV PATH="/home/sof/work/xtensa-rn-elf/bin:${PATH}"
 ENV PATH="/home/sof/work/xtensa-rmb-elf/bin:${PATH}"
 ENV PATH="/home/sof/work/xtensa-imx-elf/bin:${PATH}"
@@ -120,7 +111,7 @@ ARG NEWLIB_REPO=https://github.com/jcmvbkbc/newlib-xtensa.git
 RUN cd "$HOME" && \
 	git clone $CLONE_DEFAULTS --branch xtensa $NEWLIB_REPO && \
 	cd newlib-xtensa && \
-	for arch in byt hsw apl cnl imx imx8m imx8ulp rn rmb mt8186 mt8195; do \
+	for arch in imx imx8m imx8ulp rn rmb mt8186 mt8195; do \
 		./configure --target=xtensa-${arch}-elf \
 		--prefix=/home/sof/work/xtensa-root && \
 		make && make install && \

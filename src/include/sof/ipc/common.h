@@ -141,12 +141,11 @@ int ipc_dma_trace_send_position(void);
  */
 void ipc_send_buffer_status_notify(void);
 
-struct dai_data;
 /**
  * \brief Configure DAI.
  * @return 0 on success.
  */
-int ipc_dai_data_config(struct dai_data *dd, struct comp_dev *dev);
+int ipc_dai_data_config(struct comp_dev *dev);
 
 /**
  * \brief create a IPC boot complete message.
@@ -154,12 +153,6 @@ int ipc_dai_data_config(struct dai_data *dd, struct comp_dev *dev);
  * @param[in] data data.
  */
 void ipc_boot_complete_msg(struct ipc_cmd_hdr *header, uint32_t data);
-
-/**
- * \brief Send a IPC notification that FW has hit
- *        a DSP notification.
- */
-void ipc_send_panic_notification(void);
 
 /**
  * \brief Read a compact IPC message or return NULL for normal message.

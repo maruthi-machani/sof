@@ -610,7 +610,7 @@ static int crossover_copy(struct comp_dev *dev)
 	/* Check for changed configuration */
 	if (comp_is_new_data_blob_available(cd->model_handler)) {
 		cd->config = comp_get_data_blob(cd->model_handler, NULL, NULL);
-		ret = crossover_setup(cd, audio_stream_get_channels(&source_c->stream));
+		ret = crossover_setup(cd, source_c->stream.channels);
 		if (ret < 0) {
 			comp_err(dev, "crossover_copy(), failed Crossover setup");
 			goto out;
@@ -716,25 +716,25 @@ static int crossover_prepare(struct comp_dev *dev)
 	source_c = buffer_acquire(source);
 
 	/* Get source data format */
-	cd->source_format = audio_stream_get_frm_fmt(&source_c->stream);
+	cd->source_format = source_c->stream.frame_fmt;
 
 	/* Validate frame format and buffer size of sinks */
 	list_for_item(sink_list, &dev->bsink_list) {
 		sink = container_of(sink_list, struct comp_buffer, source_list);
 		sink_c = buffer_acquire(sink);
 
-		if (cd->source_format != audio_stream_get_frm_fmt(&sink_c->stream)) {
+		if (cd->source_format != sink_c->stream.frame_fmt) {
 			comp_err(dev, "crossover_prepare(): Source fmt %d and sink fmt %d are different for sink %d.",
-				 cd->source_format, audio_stream_get_frm_fmt(&sink_c->stream),
+				 cd->source_format, sink_c->stream.frame_fmt,
 				 sink_c->pipeline_id);
 			ret = -EINVAL;
 		} else {
 			sink_period_bytes = audio_stream_period_bytes(&sink_c->stream,
 								      dev->frames);
-			if (audio_stream_get_size(&sink_c->stream) < sink_period_bytes) {
+			if (sink_c->stream.size < sink_period_bytes) {
 				comp_err(dev,
 					 "crossover_prepare(), sink %d buffer size %d is insufficient",
-					 sink_c->pipeline_id, audio_stream_get_size(&sink_c->stream));
+					 sink_c->pipeline_id, sink_c->stream.size);
 				ret = -ENOMEM;
 			}
 		}
@@ -747,7 +747,7 @@ static int crossover_prepare(struct comp_dev *dev)
 
 	comp_info(dev, "crossover_prepare(), source_format=%d, sink_formats=%d, nch=%d",
 		  cd->source_format, cd->source_format,
-		  audio_stream_get_channels(&source_c->stream));
+		  source_c->stream.channels);
 
 	cd->config = comp_get_data_blob(cd->model_handler, NULL, NULL);
 
@@ -759,7 +759,7 @@ static int crossover_prepare(struct comp_dev *dev)
 	}
 
 	if (cd->config) {
-		ret = crossover_setup(cd, audio_stream_get_channels(&source_c->stream));
+		ret = crossover_setup(cd, source_c->stream.channels);
 		if (ret < 0) {
 			comp_err(dev, "crossover_prepare(), setup failed");
 			goto out;

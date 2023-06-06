@@ -23,16 +23,12 @@
 #include <rtos/clk.h>
 
 /* Zephyr includes */
-#include <zephyr/arch/cpu.h>
 #include <zephyr/device.h>
-#include <zephyr/fatal.h>
-#include <zephyr/kernel_structs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/pm/policy.h>
 #include <version.h>
 #include <zephyr/sys/__assert.h>
-#include <zephyr/logging/log_ctrl.h>
-#include <zephyr/logging/log.h>
+#include <soc.h>
 
 LOG_MODULE_REGISTER(zephyr, CONFIG_SOF_LOG_LEVEL);
 
@@ -112,7 +108,6 @@ void interrupt_unmask(uint32_t irq, unsigned int cpu)
 {
 	/* TODO: how do we unmask on other cores with Zephyr APIs */
 }
-#endif
 
 void platform_interrupt_set(uint32_t irq)
 {
@@ -123,6 +118,7 @@ void platform_interrupt_clear(uint32_t irq, uint32_t mask)
 {
 	/* handled by zephyr - needed for linkage */
 }
+#endif
 
 /*
  * Asynchronous Messaging Service
@@ -202,20 +198,6 @@ int task_main_start(struct sof *sof)
 	return 0;
 }
 
-static int boot_complete(void)
-{
-#ifdef CONFIG_IMX93_A55
-	/* in the case of i.MX93, SOF_IPC_FW_READY
-	 * sequence will be initiated by the host
-	 * so we shouldn't do anything here.
-	 */
-	return 0;
-#else
-	/* let host know DSP boot is complete */
-	return platform_boot_complete(0);
-#endif /* CONFIG_IMX93_A55 */
-}
-
 int start_complete(void)
 {
 #if defined(CONFIG_IMX)
@@ -233,7 +215,9 @@ int start_complete(void)
 	pm_policy_state_lock_get(PM_STATE_RUNTIME_IDLE, PM_ALL_SUBSTATES);
 	pm_policy_state_lock_get(PM_STATE_SOFT_OFF, PM_ALL_SUBSTATES);
 #endif
-	return boot_complete();
+
+	/* let host know DSP boot is complete */
+	return platform_boot_complete(0);
 }
 
 /*
@@ -327,13 +311,3 @@ int poll_for_register_delay(uint32_t reg, uint32_t mask,
 	return 0;
 }
 
-void k_sys_fatal_error_handler(unsigned int reason,
-			       const z_arch_esf_t *esf)
-{
-	ARG_UNUSED(esf);
-	LOG_PANIC();
-
-	ipc_send_panic_notification();
-
-	LOG_ERR("Halting system");
-}

@@ -2,7 +2,6 @@
 
 cmocka_test(comp_set_state
 	comp_set_state.c
-	${PROJECT_SOURCE_DIR}/src/math/numbers.c
 	${PROJECT_SOURCE_DIR}/src/audio/component.c
 	${PROJECT_SOURCE_DIR}/src/audio/data_blob.c
 	${PROJECT_SOURCE_DIR}/src/ipc/ipc3/helper.c

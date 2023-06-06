@@ -468,7 +468,7 @@ static void drc_process_one_division(struct drc_state *state,
 void drc_default_pass(const struct comp_dev *dev, const struct audio_stream __sparse_cache *source,
 		      struct audio_stream __sparse_cache *sink, uint32_t frames)
 {
-	audio_stream_copy(source, 0, sink, 0, frames * audio_stream_get_channels(source));
+	audio_stream_copy(source, 0, sink, 0, frames * source->channels);
 }
 
 static inline void drc_pre_delay_index_inc(int *idx, int increment)
@@ -492,7 +492,7 @@ static void drc_delay_input_sample_s16(struct drc_state *state,
 	int16_t *x0 = *x;
 	int16_t *y0 = *y;
 	int remaining_samples = samples;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 
 	while (remaining_samples) {
 		nbuf = audio_stream_samples_without_wrap_s16(source, x0);
@@ -531,9 +531,9 @@ static void drc_s16_default(const struct comp_dev *dev,
 			    struct audio_stream __sparse_cache *sink,
 			    uint32_t frames)
 {
-	int16_t *x = audio_stream_get_rptr(source);
-	int16_t *y = audio_stream_get_wptr(sink);
-	int nch = audio_stream_get_channels(source);
+	int16_t *x = source->r_ptr;
+	int16_t *y = sink->w_ptr;
+	int nch = source->channels;
 	int samples = frames * nch;
 	struct drc_comp_data *cd = comp_get_drvdata(dev);
 	struct drc_state *state = &cd->state;
@@ -587,7 +587,7 @@ static void drc_delay_input_sample_s32(struct drc_state *state,
 	int32_t *x0 = *x;
 	int32_t *y0 = *y;
 	int remaining_samples = samples;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 
 	while (remaining_samples) {
 		nbuf = audio_stream_samples_without_wrap_s32(source, x0);
@@ -638,7 +638,7 @@ static void drc_delay_input_sample_s24(struct drc_state *state,
 	int32_t *x0 = *x;
 	int32_t *y0 = *y;
 	int remaining_samples = samples;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 
 	while (remaining_samples) {
 		nbuf = audio_stream_samples_without_wrap_s24(source, x0);
@@ -677,9 +677,9 @@ static void drc_s24_default(const struct comp_dev *dev,
 			    struct audio_stream __sparse_cache *sink,
 			    uint32_t frames)
 {
-	int32_t *x = audio_stream_get_rptr(source);
-	int32_t *y = audio_stream_get_wptr(sink);
-	int nch = audio_stream_get_channels(source);
+	int32_t *x = source->r_ptr;
+	int32_t *y = sink->w_ptr;
+	int nch = source->channels;
 	int samples = frames * nch;
 	struct drc_comp_data *cd = comp_get_drvdata(dev);
 	struct drc_state *state = &cd->state;
@@ -725,9 +725,9 @@ static void drc_s32_default(const struct comp_dev *dev,
 			    struct audio_stream __sparse_cache *sink,
 			    uint32_t frames)
 {
-	int32_t *x = audio_stream_get_rptr(source);
-	int32_t *y = audio_stream_get_wptr(sink);
-	int nch = audio_stream_get_channels(source);
+	int32_t *x = source->r_ptr;
+	int32_t *y = sink->w_ptr;
+	int nch = source->channels;
 	int samples = frames * nch;
 	struct drc_comp_data *cd = comp_get_drvdata(dev);
 	struct drc_state *state = &cd->state;

@@ -12,7 +12,6 @@
 #include <sof/ipc/driver.h>
 #include <sof/ipc/msg.h>
 #include <sof/lib/agent.h>
-#include <sof/lib/cpu-clk-manager.h>
 #include <sof/lib/mm_heap.h>
 #include <sof/lib/watchdog.h>
 #include <sof/schedule/edf_schedule.h>
@@ -24,7 +23,6 @@
 #include <ipc/info.h>
 #include <kernel/abi.h>
 #include <rtos/clk.h>
-#include <sof/lib/cpu.h>
 
 #include <sof_versions.h>
 #include <stdint.h>
@@ -75,11 +73,6 @@ int platform_boot_complete(uint32_t boot_message)
 	return ipc_platform_send_msg(&msg);
 }
 
-static struct pm_notifier pm_state_notifier = {
-	.state_entry = NULL,
-	.state_exit = cpu_notify_state_exit,
-};
-
 /* Runs on the primary core only */
 int platform_init(struct sof *sof)
 {
@@ -87,13 +80,7 @@ int platform_init(struct sof *sof)
 
 	trace_point(TRACE_BOOT_PLATFORM_CLOCK);
 	platform_clock_init(sof);
-
-	/* Set DSP clock to MAX using KCPS API. Value should be lowered when KCPS API
-	 * for modules is implemented
-	 */
-	ret = core_kcps_adjust(cpu_get_id(), CLK_MAX_CPU_HZ / 1000);
-	if (ret < 0)
-		return ret;
+	clock_set_freq(CLK_CPU(cpu_get_id()), CLK_MAX_CPU_HZ);
 
 	trace_point(TRACE_BOOT_PLATFORM_SCHED);
 	scheduler_init_edf();
@@ -119,9 +106,6 @@ int platform_init(struct sof *sof)
 	ret = dmac_init(sof);
 	if (ret < 0)
 		return ret;
-
-	/* register power states entry / exit notifiers */
-	pm_notifier_register(&pm_state_notifier);
 
 	/* initialize the host IPC mechanisms */
 	trace_point(TRACE_BOOT_PLATFORM_IPC);

@@ -5,20 +5,102 @@
 // Author: Seppo Ingalsuo <seppo.ingalsuo@linux.intel.com>
 //         Ranjani Sridharan <ranjani.sridharan@linux.intel.com>
 
+#include <pthread.h>
 #include <sof/ipc/driver.h>
 #include <sof/ipc/topology.h>
-#include <platform/lib/ll_schedule.h>
 #include <sof/list.h>
 #include <getopt.h>
+#include <dlfcn.h>
 #include "testbench/common_test.h"
 #include <tplg_parser/topology.h>
 #include "testbench/trace.h"
 #include "testbench/file.h"
 #include <limits.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
-#define TESTBENCH_NCH	2
+#ifdef TESTBENCH_CACHE_CHECK
+#include <arch/lib/cache.h>
+struct tb_cache_context hc = {0};
+
+/* cache debugger */
+struct tb_cache_context *tb_cache = &hc;
+int tb_elem_id;
+#else
+
+/* host thread context - folded into cachec context when cache debug is enabled */
+struct tb_host_context {
+	pthread_t thread_id[CONFIG_CORE_COUNT];
+};
+
+struct tb_host_context hc = {0};
+#endif
+
+#define DECLARE_SOF_TB_UUID(entity_name, uuid_name,			\
+			 va, vb, vc,					\
+			 vd0, vd1, vd2, vd3, vd4, vd5, vd6, vd7)	\
+	struct sof_uuid uuid_name = {					\
+		.a = va, .b = vb, .c = vc,				\
+		.d = {vd0, vd1, vd2, vd3, vd4, vd5, vd6, vd7}		\
+	}
+
+#define SOF_TB_UUID(uuid_name) (&(uuid_name))
+
+DECLARE_SOF_TB_UUID("crossover", crossover_uuid, 0x948c9ad1, 0x806a, 0x4131,
+		    0xad, 0x6c, 0xb2, 0xbd, 0xa9, 0xe3, 0x5a, 0x9f);
+
+DECLARE_SOF_TB_UUID("tdfb", tdfb_uuid,  0xdd511749, 0xd9fa, 0x455c,
+		    0xb3, 0xa7, 0x13, 0x58, 0x56, 0x93, 0xf1, 0xaf);
+
+DECLARE_SOF_TB_UUID("drc", drc_uuid, 0xb36ee4da, 0x006f, 0x47f9,
+		    0xa0, 0x6d, 0xfe, 0xcb, 0xe2, 0xd8, 0xb6, 0xce);
+
+DECLARE_SOF_TB_UUID("multiband_drc", multiband_drc_uuid, 0x0d9f2256, 0x8e4f, 0x47b3,
+		    0x84, 0x48, 0x23, 0x9a, 0x33, 0x4f, 0x11, 0x91);
+
+DECLARE_SOF_TB_UUID("mux", mux_uuid, 0xc607ff4d, 0x9cb6, 0x49dc,
+		    0xb6, 0x78, 0x7d, 0xa3, 0xc6, 0x3e, 0xa5, 0x57);
+
+DECLARE_SOF_TB_UUID("demux", demux_uuid, 0xc4b26868, 0x1430, 0x470e,
+		    0xa0, 0x89, 0x15, 0xd1, 0xc7, 0x7f, 0x85, 0x1a);
+
+DECLARE_SOF_TB_UUID("google-rtc-audio-processing", google_rtc_audio_processing_uuid,
+		    0xb780a0a6, 0x269f, 0x466f, 0xb4, 0x77, 0x23, 0xdf, 0xa0,
+		    0x5a, 0xf7, 0x58);
+DECLARE_SOF_TB_UUID("mfcc", mfcc_uuid, 0xdb10a773, 0x1aa4, 0x4cea,
+		    0xa2, 0x1f, 0x2d, 0x57, 0xa5, 0xc9, 0x82, 0xeb);
+
+#define TESTBENCH_NCH 2 /* Stereo */
+
+struct pipeline_thread_data {
+	struct testbench_prm *tp;
+	int count;			/* copy iteration count */
+	int core_id;
+};
+
+/* shared library look up table */
+struct shared_lib_table lib_table[NUM_WIDGETS_SUPPORTED] = {
+	{"file", "", SOF_COMP_HOST, NULL, 0, NULL}, /* File must be first */
+	{"volume", "libsof_volume.so", SOF_COMP_VOLUME, NULL, 0, NULL},
+	{"src", "libsof_src.so", SOF_COMP_SRC, NULL, 0, NULL},
+	{"asrc", "libsof_asrc.so", SOF_COMP_ASRC, NULL, 0, NULL},
+	{"eq-fir", "libsof_eq-fir.so", SOF_COMP_EQ_FIR, NULL, 0, NULL},
+	{"eq-iir", "libsof_eq-iir.so", SOF_COMP_EQ_IIR, NULL, 0, NULL},
+	{"dcblock", "libsof_dcblock.so", SOF_COMP_DCBLOCK, NULL, 0, NULL},
+	{"crossover", "libsof_crossover.so", SOF_COMP_NONE, SOF_TB_UUID(crossover_uuid), 0, NULL},
+	{"tdfb", "libsof_tdfb.so", SOF_COMP_NONE, SOF_TB_UUID(tdfb_uuid), 0, NULL},
+	{"drc", "libsof_drc.so", SOF_COMP_NONE, SOF_TB_UUID(drc_uuid), 0, NULL},
+	{"multiband_drc", "libsof_multiband_drc.so", SOF_COMP_NONE,
+		SOF_TB_UUID(multiband_drc_uuid), 0, NULL},
+	{"mixer", "libsof_mixer.so", SOF_COMP_MIXER, NULL, 0, NULL},
+	{"mux", "libsof_mux.so", SOF_COMP_MUX, SOF_TB_UUID(mux_uuid), 0, NULL},
+	{"demux", "libsof_mux.so", SOF_COMP_DEMUX, SOF_TB_UUID(demux_uuid), 0, NULL},
+	{"google-rtc-audio-processing", "libsof_google-rtc-audio-processing.so", SOF_COMP_NONE,
+		SOF_TB_UUID(google_rtc_audio_processing_uuid), 0, NULL},
+	{"mfcc", "libsof_mfcc.so", SOF_COMP_NONE, SOF_TB_UUID(mfcc_uuid), 0, NULL},
+};
+
+/* compatible variables, not used */
+intptr_t _comp_init_start, _comp_init_end;
 
 /*
  * Parse output filenames from user input
@@ -108,6 +190,48 @@ static int parse_pipelines(char *pipelines, struct testbench_prm *tp)
 	return 0;
 }
 
+/*
+ * Parse shared library from user input
+ * Currently only handles volume and src comp
+ * This function takes in the libraries to be used as an input in the format:
+ * "vol=libsof_volume.so,src=libsof_src.so,..."
+ * The function parses the above string to identify the following:
+ * component type and the library name and sets up the library handle
+ * for the component and stores it in the shared library table
+ */
+static int parse_libraries(char *libs)
+{
+	char *lib_token = NULL;
+	char *comp_token = NULL;
+	char *token = strtok_r(libs, ",", &lib_token);
+	int index;
+
+	while (token) {
+		/* get component type */
+		char *token1 = strtok_r(token, "=", &comp_token);
+
+		/* get shared library index from library table */
+		index = get_index_by_name(token1, lib_table);
+		if (index < 0) {
+			fprintf(stderr, "error: unsupported comp type %s\n", token1);
+			return -EINVAL;
+		}
+
+		/* get shared library name */
+		token1 = strtok_r(NULL, "=", &comp_token);
+		if (!token1)
+			break;
+
+		/* set to new name that may be used while loading */
+		strncpy(lib_table[index].library_name, token1,
+			MAX_LIB_NAME_LEN - 1);
+
+		/* next library */
+		token = strtok_r(NULL, ",", &lib_token);
+	}
+	return 0;
+}
+
 /* print usage for testbench */
 static void print_usage(char *executable)
 {
@@ -125,6 +249,7 @@ static void print_usage(char *executable)
 	printf("  -D <pipeline duration in ms>\n");
 	printf("  -P <number of dynamic pipeline iterations>\n");
 	printf("  -T <microseconds for tick, 0 for batch mode>\n");
+	printf("  -V <number of virtual cores>\n\n");
 	printf("Options for input and output format override:\n");
 	printf("  -b <input_format>, S16_LE, S24_LE, or S32_LE\n");
 	printf("  -c <input channels>\n");
@@ -254,7 +379,7 @@ static void test_pipeline_get_file_stats(int pipeline_id)
 				time = cd->pipeline->pipe_task->start;
 				if (fcd->fs.copy_count == 0)
 					fcd->fs.copy_count = 1;
-				printf("file %s: id %d: type %d: samples %d copies %d total time %lu uS avg time %lu uS\n",
+				printf("file %s: id %d: type %d: samples %d copies %d total time %zu uS avg time %zu uS\n",
 				       fcd->fs.fn, cd->ipc_config.id, cd->drv->type, fcd->fs.n,
 				       fcd->fs.copy_count, time, time / fcd->fs.copy_count);
 				break;
@@ -294,27 +419,32 @@ static int parse_input_args(int argc, char **argv, struct testbench_prm *tp)
 		/* input samples bit format */
 		case 'b':
 			tp->bits_in = strdup(optarg);
-			tp->frame_fmt = tplg_find_format(tp->bits_in);
+			tp->cmd_frame_fmt = find_format(tp->bits_in);
+			break;
+
+		/* override default libraries */
+		case 'a':
+			ret = parse_libraries(optarg);
 			break;
 
 		/* input sample rate */
 		case 'r':
-			tp->fs_in = atoi(optarg);
+			tp->cmd_fs_in = atoi(optarg);
 			break;
 
 		/* output sample rate */
 		case 'R':
-			tp->fs_out = atoi(optarg);
+			tp->cmd_fs_out = atoi(optarg);
 			break;
 
 		/* input/output channels */
 		case 'c':
-			tp->channels_in = atoi(optarg);
+			tp->cmd_channels_in = atoi(optarg);
 			break;
 
 		/* output channels */
 		case 'n':
-			tp->channels_out = atoi(optarg);
+			tp->cmd_channels_out = atoi(optarg);
 			break;
 
 			/* enable debug prints */
@@ -337,6 +467,11 @@ static int parse_input_args(int argc, char **argv, struct testbench_prm *tp)
 			tp->dynamic_pipeline_iterations = atoi(optarg);
 			break;
 
+		/* number of virtual cores */
+		case 'V':
+			tp->num_vcores = atoi(optarg);
+			break;
+
 		/* output sample files */
 		case 'p':
 			ret = parse_pipelines(optarg, tp);
@@ -356,7 +491,7 @@ static int parse_input_args(int argc, char **argv, struct testbench_prm *tp)
 		default:
 			fprintf(stderr, "unknown option %c\n", option);
 			ret = -EINVAL;
-			/* fallthrough */
+			__attribute__ ((fallthrough));
 		case 'h':
 			print_usage(argv[0]);
 			exit(EXIT_SUCCESS);
@@ -378,8 +513,9 @@ static struct pipeline *get_pipeline_by_id(int id)
 	return pcm_dev->cd->pipeline;
 }
 
-static int test_pipeline_stop(struct testbench_prm *tp)
+static int test_pipeline_stop(struct pipeline_thread_data *ptdata)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	struct pipeline *p;
 	struct ipc *ipc = sof_get()->ipc;
 	int ret = 0;
@@ -395,8 +531,9 @@ static int test_pipeline_stop(struct testbench_prm *tp)
 	return ret;
 }
 
-static int test_pipeline_reset(struct testbench_prm *tp)
+static int test_pipeline_reset(struct pipeline_thread_data *ptdata)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	struct pipeline *p;
 	struct ipc *ipc = sof_get()->ipc;
 	int ret = 0;
@@ -412,16 +549,18 @@ static int test_pipeline_reset(struct testbench_prm *tp)
 	return ret;
 }
 
-static void test_pipeline_free(struct testbench_prm *tp)
+static void test_pipeline_free(struct pipeline_thread_data *ptdata)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	int i;
 
 	for (i = 0; i < tp->pipeline_num; i++)
 		test_pipeline_free_comps(tp->pipelines[i]);
 }
 
-static int test_pipeline_params(struct testbench_prm *tp, struct tplg_context *ctx)
+static int test_pipeline_params(struct pipeline_thread_data *ptdata, struct tplg_context *ctx)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	struct ipc_comp_dev *pcm_dev;
 	struct pipeline *p;
 	struct ipc *ipc = sof_get()->ipc;
@@ -442,13 +581,13 @@ static int test_pipeline_params(struct testbench_prm *tp, struct tplg_context *c
 		p = pcm_dev->cd->pipeline;
 
 		/* input and output sample rate */
-		if (!tp->fs_in)
-			tp->fs_in = p->period * p->frames_per_sched;
+		if (!ctx->fs_in)
+			ctx->fs_in = p->period * p->frames_per_sched;
 
-		if (!tp->fs_out)
-			tp->fs_out = p->period * p->frames_per_sched;
+		if (!ctx->fs_out)
+			ctx->fs_out = p->period * p->frames_per_sched;
 
-		ret = tb_pipeline_params(tp, ipc, p, ctx);
+		ret = tb_pipeline_params(ipc, p, ctx);
 		if (ret < 0) {
 			fprintf(stderr, "error: pipeline params failed: %s\n",
 				strerror(ret));
@@ -460,8 +599,9 @@ static int test_pipeline_params(struct testbench_prm *tp, struct tplg_context *c
 	return 0;
 }
 
-static int test_pipeline_start(struct testbench_prm *tp)
+static int test_pipeline_start(struct pipeline_thread_data *ptdata)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	struct pipeline *p;
 	struct ipc *ipc = sof_get()->ipc;
 	int i;
@@ -484,18 +624,11 @@ static int test_pipeline_start(struct testbench_prm *tp)
 	return 0;
 }
 
-static bool test_pipeline_check_state(struct testbench_prm *tp, int state)
+static bool test_pipeline_check_state(struct pipeline_thread_data *ptdata, int state)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	struct pipeline *p;
-	uint64_t cycles0, cycles1;
 	int i;
-
-	tb_getcycles(&cycles0);
-
-	schedule_ll_run_tasks();
-
-	tb_getcycles(&cycles1);
-	tp->total_cycles += cycles1 - cycles0;
 
 	/* Run pipeline until EOF from fileread */
 	for (i = 0; i < tp->pipeline_num; i++) {
@@ -507,38 +640,43 @@ static bool test_pipeline_check_state(struct testbench_prm *tp, int state)
 	return false;
 }
 
-static int test_pipeline_load(struct testbench_prm *tp, struct tplg_context *ctx)
+static int test_pipeline_load(struct pipeline_thread_data *ptdata, struct tplg_context *ctx)
 {
+	struct testbench_prm *tp = ptdata->tp;
 	int ret;
 
 	/* setup the thread virtual core config */
 	memset(ctx, 0, sizeof(*ctx));
-	ctx->comp_id = 1;
-	ctx->core_id = 0;
+	ctx->comp_id = 1000 * ptdata->core_id;
+	ctx->core_id = ptdata->core_id;
 	ctx->sof = sof_get();
+	ctx->tp = tp;
 	ctx->tplg_file = tp->tplg_file;
-	ctx->ipc_major = 3;
+	ctx->fs_in = tp->cmd_fs_in;
+	ctx->fs_out = tp->cmd_fs_out;
+	ctx->channels_in = tp->cmd_channels_in;
+	ctx->channels_out = tp->cmd_channels_out;
+	ctx->frame_fmt = tp->cmd_frame_fmt;
 
 	/* parse topology file and create pipeline */
-	ret = tb_parse_topology(tp, ctx);
+	ret = parse_topology(ctx);
 	if (ret < 0)
 		fprintf(stderr, "error: parsing topology\n");
 
 	return ret;
 }
 
-static void test_pipeline_stats(struct testbench_prm *tp,
-				struct tplg_context *ctx, long long delta_t)
+static void test_pipeline_stats(struct pipeline_thread_data *ptdata,
+				struct tplg_context *ctx, uint64_t delta)
 {
-	int count = 1;
+	struct testbench_prm *tp = ptdata->tp;
+	int count = ptdata->count;
 	struct ipc_comp_dev *icd;
 	struct comp_dev *cd;
 	struct dai_data *dd;
 	struct pipeline *p;
 	struct file_comp_data *frcd, *fwcd;
-	long long file_cycles, pipeline_cycles;
-	float pipeline_mcps;
-	int n_in, n_out, frames_out;
+	int n_in, n_out;
 	int i;
 
 	/* Get pointer to filewrite */
@@ -566,15 +704,14 @@ static void test_pipeline_stats(struct testbench_prm *tp,
 	p = icd->cd->pipeline;
 
 	/* input and output sample rate */
-	if (!tp->fs_in)
-		tp->fs_in = p->period * p->frames_per_sched;
+	if (!ctx->fs_in)
+		ctx->fs_in = p->period * p->frames_per_sched;
 
-	if (!tp->fs_out)
-		tp->fs_out = p->period * p->frames_per_sched;
+	if (!ctx->fs_out)
+		ctx->fs_out = p->period * p->frames_per_sched;
 
 	n_in = frcd->fs.n;
 	n_out = fwcd->fs.n;
-	file_cycles = frcd->fs.cycles_count + fwcd->fs.cycles_count;
 
 	/* print test summary */
 	printf("==========================================================\n");
@@ -585,8 +722,8 @@ static void test_pipeline_stats(struct testbench_prm *tp,
 	test_pipeline_get_file_stats(ctx->pipeline_id);
 
 	printf("Input bit format: %s\n", tp->bits_in);
-	printf("Input sample rate: %d\n", tp->fs_in);
-	printf("Output sample rate: %d\n", tp->fs_out);
+	printf("Input sample rate: %d\n", ctx->fs_in);
+	printf("Output sample rate: %d\n", ctx->fs_out);
 	for (i = 0; i < tp->input_file_num; i++) {
 		printf("Input[%d] read from file: \"%s\"\n",
 		       i, tp->input_file[i]);
@@ -595,41 +732,28 @@ static void test_pipeline_stats(struct testbench_prm *tp,
 		printf("Output[%d] written to file: \"%s\"\n",
 		       i, tp->output_file[i]);
 	}
-	frames_out = n_out / tp->channels_out;
-	printf("Input sample (frame) count: %d (%d)\n", n_in, n_in / tp->channels_in);
-	printf("Output sample (frame) count: %d (%d)\n", n_out, frames_out);
-	if (tp->total_cycles) {
-		pipeline_cycles = tp->total_cycles - file_cycles;
-		pipeline_mcps = (float)pipeline_cycles * tp->fs_out / frames_out / 1e6;
-		printf("Total execution cycles: %lld\n", tp->total_cycles);
-		printf("File component cycles: %lld\n", file_cycles);
-		printf("Pipeline cycles: %lld\n", pipeline_cycles);
-		printf("Pipeline MCPS: %6.2f\n", pipeline_mcps);
-		if (!tp->quiet)
-			printf("Warning: Use -q to avoid printing to increase MCPS.\n");
-	}
-
-	if (delta_t)
-		printf("Total execution time: %lld us, %.2f x realtime\n",
-		       delta_t, (float)frames_out / tp->fs_out * 1000000 / delta_t);
-
-	printf("\n");
+	printf("Input sample (frame) count: %d (%d)\n", n_in, n_in / ctx->channels_in);
+	printf("Output sample (frame) count: %d (%d)\n", n_out, n_out / ctx->channels_out);
+	printf("Total execution time: %zu us, %.2f x realtime\n\n",
+	       delta, (double)((double)n_out / ctx->channels_out / ctx->fs_out) * 1000000 / delta);
 }
 
 /*
  * Tester thread, one for each virtual core. This is NOT the thread that will
  * execute the virtual core.
  */
-static int pipline_test(struct testbench_prm *tp)
+static void *pipline_test(void *data)
 {
+	struct pipeline_thread_data *ptdata = data;
+	struct testbench_prm *tp = ptdata->tp;
 	int dp_count = 0;
 	struct tplg_context ctx;
 	struct timespec ts;
 	struct timespec td0, td1;
-	long long delta_t;
 	int err;
 	int nsleep_time;
 	int nsleep_limit;
+	uint64_t delta;
 
 	/* build, run and teardown pipelines */
 	while (dp_count < tp->dynamic_pipeline_iterations) {
@@ -641,28 +765,27 @@ static int pipline_test(struct testbench_prm *tp)
 		printf("		           Test Start %d\n", dp_count);
 		printf("==========================================================\n");
 
-		err = test_pipeline_load(tp, &ctx);
+		err = test_pipeline_load(ptdata, &ctx);
 		if (err < 0) {
 			fprintf(stderr, "error: pipeline load %d failed %d\n",
 				dp_count, err);
 			break;
 		}
 
-		err = test_pipeline_params(tp, &ctx);
+		err = test_pipeline_params(ptdata, &ctx);
 		if (err < 0) {
 			fprintf(stderr, "error: pipeline params %d failed %d\n",
 				dp_count, err);
 			break;
 		}
 
-		err = test_pipeline_start(tp);
+		err = test_pipeline_start(ptdata);
 		if (err < 0) {
 			fprintf(stderr, "error: pipeline run %d failed %d\n",
 				dp_count, err);
 			break;
 		}
-
-		tb_gettime(&td0);
+		clock_gettime(CLOCK_MONOTONIC, &td0);
 
 		/* sleep to let the pipeline work - we exit at timeout OR
 		 * if copy iterations OR max_samples is reached (whatever first)
@@ -677,15 +800,11 @@ static int pipline_test(struct testbench_prm *tp)
 				       tp->pipeline_duration_ms;
 
 		while (nsleep_time < nsleep_limit) {
-#if defined __XCC__
-			err = 0;
-#else
 			/* wait for next tick */
 			err = nanosleep(&ts, &ts);
-#endif
 			if (err == 0) {
 				nsleep_time += tp->tick_period_us; /* sleep fully completed */
-				if (test_pipeline_check_state(tp, SOF_TASK_STATE_CANCEL)) {
+				if (test_pipeline_check_state(ptdata, SOF_TASK_STATE_CANCEL)) {
 					fprintf(stdout, "pipeline cancelled !\n");
 					break;
 				}
@@ -699,45 +818,45 @@ static int pipline_test(struct testbench_prm *tp)
 			}
 		}
 
-		tb_gettime(&td1);
-
-		err = test_pipeline_stop(tp);
+		clock_gettime(CLOCK_MONOTONIC, &td1);
+		err = test_pipeline_stop(ptdata);
 		if (err < 0) {
 			fprintf(stderr, "error: pipeline stop %d failed %d\n",
 				dp_count, err);
 			break;
 		}
 
-		delta_t = (td1.tv_sec - td0.tv_sec) * 1000000;
-		delta_t += (td1.tv_nsec - td0.tv_nsec) / 1000;
-		test_pipeline_stats(tp, &ctx, delta_t);
+		delta = (td1.tv_sec - td0.tv_sec) * 1000000;
+		delta += (td1.tv_nsec - td0.tv_nsec) / 1000;
+		test_pipeline_stats(ptdata, &ctx, delta);
 
-		err = test_pipeline_reset(tp);
+		err = test_pipeline_reset(ptdata);
 		if (err < 0) {
 			fprintf(stderr, "error: pipeline stop %d failed %d\n",
 				dp_count, err);
 			break;
 		}
 
-		test_pipeline_free(tp);
+		test_pipeline_free(ptdata);
 
+		ptdata->count++;
 		dp_count++;
 	}
 
-	return 0;
+	return NULL;
 }
 
 static struct testbench_prm tp;
 
 int main(int argc, char **argv)
 {
+	struct pipeline_thread_data ptdata[CONFIG_CORE_COUNT];
 	int i, err;
 
 	/* initialize input and output sample rates, files, etc. */
 	debug = 0;
-	tp.total_cycles = 0;
-	tp.fs_in = 0;
-	tp.fs_out = 0;
+	tp.cmd_fs_in = 0;
+	tp.cmd_fs_out = 0;
 	tp.bits_in = 0;
 	tp.tplg_file = NULL;
 	tp.input_file_num = 0;
@@ -748,12 +867,13 @@ int main(int argc, char **argv)
 	for (i = 0; i < MAX_INPUT_FILE_NUM; i++)
 		tp.input_file[i] = NULL;
 
-	tp.channels_in = TESTBENCH_NCH;
-	tp.channels_out = 0;
+	tp.cmd_channels_in = TESTBENCH_NCH;
+	tp.cmd_channels_out = 0;
 	tp.max_pipeline_id = 0;
 	tp.copy_check = false;
 	tp.quiet = 0;
 	tp.dynamic_pipeline_iterations = 1;
+	tp.num_vcores = 0;
 	tp.pipeline_string = calloc(1, DEBUG_MSG_LEN);
 	tp.pipelines[0] = 1;
 	tp.pipeline_num = 1;
@@ -766,8 +886,8 @@ int main(int argc, char **argv)
 	if (err < 0)
 		goto out;
 
-	if (!tp.channels_out)
-		tp.channels_out = tp.channels_in;
+	if (!tp.cmd_channels_out)
+		tp.cmd_channels_out = tp.cmd_channels_in;
 
 	/* check mandatory args */
 	if (!tp.tplg_file) {
@@ -794,6 +914,16 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	if (tp.num_vcores > CONFIG_CORE_COUNT) {
+		fprintf(stderr, "virtual core count %d is greater than max %d\n",
+			tp.num_vcores, CONFIG_CORE_COUNT);
+		print_usage(argv[0]);
+		exit(EXIT_FAILURE);
+	} else {
+		if (!tp.num_vcores)
+			tp.num_vcores = 1;
+	}
+
 	if (tp.quiet)
 		tb_enable_trace(false); /* reduce trace output */
 	else
@@ -806,7 +936,22 @@ int main(int argc, char **argv)
 	}
 
 	/* build, run and teardown pipelines */
-	pipline_test(&tp);
+	for (i = 0; i < tp.num_vcores; i++) {
+		ptdata[i].core_id = i;
+		ptdata[i].tp = &tp;
+		ptdata[i].count = 0;
+
+		err = pthread_create(&hc.thread_id[i], NULL,
+				     pipline_test, &ptdata[i]);
+		if (err) {
+			printf("error: can't create thread %d %s\n", err, strerror(err));
+			goto join;
+		}
+	}
+
+join:
+	for (i = 0; i < tp.num_vcores; i++)
+		err = pthread_join(hc.thread_id[i], NULL);
 
 	/* free other core FW services */
 	tb_free(sof_get());
@@ -822,6 +967,16 @@ out:
 		free(tp.input_file[i]);
 
 	free(tp.pipeline_string);
+
+#ifdef TESTBENCH_CACHE_CHECK
+	_cache_free_all();
+#endif
+
+	/* close shared library objects */
+	for (i = 0; i < NUM_WIDGETS_SUPPORTED; i++) {
+		if (lib_table[i].handle)
+			dlclose(lib_table[i].handle);
+	}
 
 	return EXIT_SUCCESS;
 }

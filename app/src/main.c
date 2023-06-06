@@ -20,7 +20,7 @@ int sof_main(int argc, char *argv[]);
  * TODO: Here comes SOF initialization
  */
 
-int main(void)
+void main(void)
 {
 	int ret;
 
@@ -47,5 +47,4 @@ int main(void)
 	 */
 	k_thread_suspend(k_current_get());
 #endif
-	return 0;
 }

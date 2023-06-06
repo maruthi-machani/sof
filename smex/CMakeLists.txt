@@ -19,11 +19,7 @@ add_executable(smex
 
 # In addition to the usual flags from CMAKE_BUILD_TYPE
 target_compile_options(smex PRIVATE
-	-Wall -Werror -Wmissing-prototypes -Wimplicit-fallthrough
-)
-
-target_link_options(smex PRIVATE
-	-Wall -Werror -Wl,-EL
+	-Wall -Werror -Wl,-EL -Wmissing-prototypes -Wimplicit-fallthrough=3
 )
 
 target_include_directories(smex PRIVATE

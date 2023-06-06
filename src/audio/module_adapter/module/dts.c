@@ -93,9 +93,9 @@ static int dts_effect_populate_buffer_configuration(struct comp_dev *dev,
 
 	buffer_fmt = source_c->buffer_fmt;
 	stream = &source_c->stream;
-	frame_fmt = audio_stream_get_frm_fmt(stream);
-	rate = audio_stream_get_rate(stream);
-	channels = audio_stream_get_channels(stream);
+	frame_fmt = stream->frame_fmt;
+	rate = stream->rate;
+	channels = stream->channels;
 
 	buffer_release(source_c);
 
@@ -315,11 +315,11 @@ static int dts_codec_apply_config(struct processing_module *mod)
 	/* Check that config->data isn't invalid and has size greater than 0 */
 	config_header_size = sizeof(config->size) + sizeof(config->avail);
 	if (config->size < config_header_size) {
-		comp_warn(dev, "dts_codec_apply_config() config->data is invalid");
-		return 0;
+		comp_err(dev, "dts_codec_apply_config() config->data is invalid");
+		return -EINVAL;
 	} else if (config->size == config_header_size) {
-		comp_warn(dev, "dts_codec_apply_config() size of config->data is 0");
-		return 0;
+		comp_err(dev, "dts_codec_apply_config() size of config->data is 0");
+		return -EINVAL;
 	}
 
 	/* Calculate size of config->data */
@@ -434,6 +434,10 @@ dts_codec_set_configuration(struct processing_module *mod, uint32_t config_id,
 	/* return if more fragments are expected or if the module is not prepared */
 	if ((pos != MODULE_CFG_FRAGMENT_LAST && pos != MODULE_CFG_FRAGMENT_SINGLE) ||
 	    md->state < MODULE_INITIALIZED)
+		return 0;
+
+	/* return if configuration size is 0 */
+	if (!md->new_cfg_size)
 		return 0;
 
 	/* whole configuration received, apply it now */

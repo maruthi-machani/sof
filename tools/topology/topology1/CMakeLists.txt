@@ -51,11 +51,8 @@ set(TPLGS
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-adl-rt711-l0-rt1316-l13-rt714-l2\;-DPLATFORM=adl\;-DUAJ_LINK=0\;-DAMP_1_LINK=1\;-DAMP_2_LINK=3\;-DEXT_AMP_REF\;-DMIC_LINK=2"
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-adl-rt711-l2-rt1316-l01-rt714-l3\;-DPLATFORM=adl\;-DUAJ_LINK=2\;-DAMP_1_LINK=0\;-DAMP_2_LINK=1\;-DEXT_AMP_REF\;-DMIC_LINK=3"
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-adl-rt711-l2-rt1316-l01\;-DPLATFORM=adl\;-DUAJ_LINK=2\;-DAMP_1_LINK=0\;-DAMP_2_LINK=1\;-DEXT_AMP_REF\;-DNO_LOCAL_MIC"
-	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l2\;-DPLATFORM=rpl\;-DUAJ_LINK=2\;-DNOAMP\;-DNO_LOCAL_MIC"
-	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l0\;-DPLATFORM=rpl\;-DUAJ_LINK=0\;-DNOAMP\;-DNO_LOCAL_MIC"
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l2-rt1316-l01-rt714-l3\;-DPLATFORM=rpl\;-DUAJ_LINK=2\;-DAMP_1_LINK=0\;-DAMP_2_LINK=1\;-DEXT_AMP_REF\;-DMIC_LINK=3"
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l2-rt1316-l01\;-DPLATFORM=rpl\;-DUAJ_LINK=2\;-DAMP_1_LINK=0\;-DAMP_2_LINK=1\;-DEXT_AMP_REF\;-DNO_LOCAL_MIC"
-	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l0-rt1316-l12-rt714-l3\;-DPLATFORM=rpl\;-DUAJ_LINK=0\;-DAMP_1_LINK=1\;-DAMP_2_LINK=2\;-DEXT_AMP_REF\;-DMIC_LINK=3"
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l0-rt1318-l12-rt714-l3\;-DPLATFORM=rpl\;-DUAJ_LINK=0\;-DAMP_1_LINK=1\;-DAMP_2_LINK=2\;-DEXT_AMP_REF\;-DMIC_LINK=3"
 	"sof-icl-rt711-rt1308-rt715-hdmi\;sof-rpl-rt711-l0-rt1318-l12\;-DPLATFORM=rpl\;-DUAJ_LINK=0\;-DAMP_1_LINK=1\;-DAMP_2_LINK=2\;-DEXT_AMP_REF\;-DNO_LOCAL_MIC"
 	"sof-tgl-rt711-rt1308\;sof-tgl-rt711-rt1308-2ch\;-DCHANNELS=2\;-DEXT_AMP\;-DDMICPROC_FILTER1=eq_iir_coef_highpass_40hz_20db_48khz.m4\;-DDMIC16KPROC_FILTER1=eq_iir_coef_highpass_40hz_20db_16khz.m4\;-DPLATFORM=tgl"
@@ -104,8 +101,8 @@ set(TPLGS
 	"sof-tgl-max98357a-rt5682\;sof-adl-max98390-rt5682-rtnr-google-aec\;-DCODEC=MAX98390\;-DFMT=s32le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682\;-DAMP_SSP=1\;-DBT_OFFLOAD\;-DCHANNELS=2\;-DGOOGLE_RTC_AUDIO_PROCESSING\;-DRTNR\;-DNOHOTWORD\;-DNO16KDMIC\;-DSPK_MIC_PERIOD_US=10000"
 	"sof-tgl-max98357a-rt5682\;sof-adl-max98390-ssp2-rt5682-ssp0\;-DCODEC=MAX98390\;-DFMT=s32le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682\;-DAMP_SSP=2"
 	"sof-tgl-max98357a-rt5682\;sof-adl-rt5682\;-DNO_AMP\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682"
-	"sof-tgl-max98357a-rt5682\;sof-adl-rt1019-rt5682\;-DCODEC=RT1019\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682\;-DAMP_SSP=1\;-DSPK_MIC_PERIOD_US=10000\;-DBT_OFFLOAD"
-	"sof-tgl-max98357a-rt5682\;sof-adl-rt1019-rt5682-waves\;-DCODEC=RT1019\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682\;-DAMP_SSP=1\;-DWAVES\;-DBT_OFFLOAD"
+	"sof-tgl-max98357a-rt5682\;sof-adl-rt1019-rt5682\;-DCODEC=RT1019\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682\;-DAMP_SSP=1\;-DSPK_MIC_PERIOD_US=10000"
+	"sof-tgl-max98357a-rt5682\;sof-adl-rt1019-rt5682-waves\;-DCODEC=RT1019\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_rt5682\;-DAMP_SSP=1\;-DWAVES"
 	"sof-tgl-max98357a-rt5682\;sof-adl-cs35l41\;-DCODEC=CS35L41\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_ssp_amp\;-DAMP_SSP=1\;-DBT_OFFLOAD\;-DNO_HEADPHONE"
 	"sof-tgl-max98357a-rt5682\;sof-adl-cs35l41-waves\;-DCODEC=CS35L41\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_ssp_amp\;-DAMP_SSP=1\;-DBT_OFFLOAD\;-DNO_HEADPHONE\;-DWAVES\;-DNOHOTWORD\;-DNO16KDMIC"
 	"sof-tgl-max98357a-rt5682\;sof-adl-cs35l41-google-aec-waves\;-DCODEC=CS35L41\;-DFMT=s24le\;-DPLATFORM=adl\;-DLINUX_MACHINE_DRIVER=sof_ssp_amp\;-DAMP_SSP=1\;-DBT_OFFLOAD\;-DNO_HEADPHONE\;-DGOOGLE_RTC_AUDIO_PROCESSING\;-DWAVES\;-DNOHOTWORD\;-DNO16KDMIC\;-DSPK_MIC_PERIOD_US=10000"
@@ -150,50 +147,30 @@ set(TPLGS
 	#sof-adl-es8336-ssp1-hdmi-ssp02 supports es8336 codec along with 2xHDMI_over_SSP Capture's.
 	"sof-glk-es8336\;sof-adl-es8336-ssp1-hdmi-ssp02\;-DPLATFORM=adl\;-DSSP_NUM=1\;-DCHANNELS=0\;-DHDMI_1_SSP_NUM=0\;-DHDMI_2_SSP_NUM=2"
 
-	## i.MX8 (i.MX8QM and i.MX8QXP) topologies
 	"sof-imx8-nocodec\;sof-imx8-nocodec"
 	"sof-imx8-wm8960-cs42888\;sof-imx8-wm8960-cs42888"
 	"sof-imx8-cs42888\;sof-imx8-cs42888"
 	"sof-imx8-nocodec-sai\;sof-imx8-nocodec-sai"
-	"sof-imx8-wm8960-mixer\;sof-imx8-wm8960-mixer\;-DCODEC=wm8960\;-DRATE=48000\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960-mixer\;sof-imx8-wm8962-mixer\;-DCODEC=wm8962\;-DRATE=48000\;-DSAI_INDEX=1"
+	"sof-imx8-wm8960\;sof-imx8-wm8960\;-DPPROC=volume"
+	"sof-imx8-wm8960\;sof-imx8-eq-iir-wm8960\;-DPPROC=eq-iir-volume"
+	"sof-imx8-wm8960\;sof-imx8-eq-fir-wm8960\;-DPPROC=eq-fir-volume"
+	"sof-imx8-wm8960\;sof-imx8-drc-wm8960\;-DPPROC=drc"
+	"sof-imx8-wm8960-mixer\;sof-imx8-wm8960-mixer"
 	"sof-imx8-compr-wm8960-mixer\;sof-imx8-compr-wm8960-mixer"
+	"sof-imx8mp-compr-wm8960-mixer\;sof-imx8mp-compr-wm8960-mixer"
 	"sof-imx8-wm8960-kwd\;sof-imx8-wm8960-kwd"
 	"sof-imx8-cs42888-mixer\;sof-imx8-cs42888-mixer"
-	"sof-imx8-wm8960\;sof-imx8-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=volume\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960\;sof-imx8-wm8962\;-DCODEC=wm8962\;-DRATE=48000\;-DPPROC=volume\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960\;sof-imx8-eq-iir-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=eq-iir-volume\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960\;sof-imx8-eq-iir-wm8962\;-DCODEC=wm8962\;-DRATE=48000\;-DPPROC=eq-iir-volume\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960\;sof-imx8-eq-fir-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=eq-fir-volume\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960\;sof-imx8-eq-fir-wm8962\;-DCODEC=wm8962\;-DRATE=48000\;-DPPROC=eq-fir-volume\;-DSAI_INDEX=1"
-	"sof-imx8-wm8960\;sof-imx8-drc-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=drc\;-DSAI_INDEX=1"
-	## end i.MX8 (i.MX8QM and i.MX8QXP) topologies
-
-	## i.MX8MP topologies
-	"sof-imx8mp-compr-wm8960-mixer\;sof-imx8mp-compr-wm8960-mixer"
-	"sof-imx8-wm8960-mixer\;sof-imx8mp-wm8960-mixer\;-DCODEC=wm8960\;-DRATE=48000\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960-mixer\;sof-imx8mp-wm8962-mixer\;-DCODEC=wm8962\;-DRATE=48000\;-DSAI_INDEX=3"
+	"sof-imx8mp-wm8960-mixer\;sof-imx8mp-wm8960-mixer"
 	"sof-imx8mp-wm8960-kwd\;sof-imx8mp-wm8960-kwd"
-	"sof-imx8-wm8960\;sof-imx8mp-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-wm8904\;-DCODEC=wm8904\;-DRATE=44100\;-DPPROC=volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-wm8962\;-DCODEC=wm8962\;-DRATE=48000\;-DPPROC=volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-eq-iir-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=eq-iir-volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-eq-iir-wm8962\;-DCODEC=wm8962\;-DRATE=48000\;-DPPROC=eq-iir-volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-eq-fir-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=eq-fir-volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-eq-fir-wm8962\;-DCODEC=wm8962\;-DRATE=48000\;-DPPROC=eq-fir-volume\;-DSAI_INDEX=3"
-	"sof-imx8-wm8960\;sof-imx8mp-drc-wm8960\;-DCODEC=wm8960\;-DRATE=48000\;-DPPROC=drc\;-DSAI_INDEX=3"
-	## end i.MX8MP topologies
-
-	## i.MX8ULP topologies
 	"sof-imx8ulp-btsco\;sof-imx8ulp-btsco\;-DRATE=8000"
 	"sof-imx8ulp-btsco\;sof-imx8ulp-btsco-16k\;-DRATE=16000"
 	"sof-imx8ulp-9x9-btsco\;sof-imx8ulp-9x9-btsco\;-DRATE=8000"
 	"sof-imx8ulp-9x9-btsco\;sof-imx8ulp-9x9-btsco-16k\;-DRATE=16000"
-	## end i.MX8ULP topologies
-
-	## i.MX93 topologies
-	"sof-imx93-wm8962\;sof-imx93-wm8962\;-DPPROC=volume"
-	## end i.MX93 topologies
+	"sof-imx8mp-wm8960\;sof-imx8mp-wm8960\;-DPPROC=volume"
+	"sof-imx8mp-wm8960\;sof-imx8mp-eq-iir-wm8960\;-DPPROC=eq-iir-volume"
+	"sof-imx8mp-wm8960\;sof-imx8mp-eq-fir-wm8960\;-DPPROC=eq-fir-volume"
+	"sof-imx8mp-wm8960\;sof-imx8mp-drc-wm8960\;-DPPROC=drc"
+	"sof-imx8mp-wm8904\;sof-imx8mp-wm8904\;-DPPROC=volume"
 
 	"sof-mt8195-mt6359-rt1019-rt5682\;sof-mt8195-mt6359-rt1019-rt5682"
 	"sof-mt8195-mt6359-rt1019-rt5682\;sof-mt8195-mt6359-rt1019-rt5682-dts\;-DDTS=`DTS'"
@@ -212,7 +189,9 @@ set(TPLGS
 	"sof-acp-rmb\;sof-acp-rmb"
 	"sof-acp-rmb-dmic4ch\;sof-acp-rmb-dmic4ch"
 	"sof-acp-rmb-tdm8ch-dmic4ch\;sof-acp-rmb-tdm8ch-dmic4ch-rt5682-rt1019"
+	"sof-acp-rmb-tdm8ch-dmic4ch\;sof-acp-rmb-tdm8ch-dmic4ch-rt5682-rt1019-dts\;-DDTS=`DTS'"
 	"sof-acp-rmb-tdm8ch-dmic2ch-nau8825-max98360\;sof-acp-rmb-tdm8ch-dmic2ch-nau8825-max98360"
+	"sof-acp-rmb-tdm8ch-dmic2ch-nau8825-max98360\;sof-acp-rmb-tdm8ch-dmic2ch-nau8825-max98360-dts\;-DDTS=`DTS'"
 	"sof-acp-rmb\;sof-rmb-rt5682s-rt1019"
 	"sof-acp-rmb\;sof-rmb-nau8825-max98360"
 )

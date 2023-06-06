@@ -32,8 +32,8 @@ static inline ae_int32x2  dcblock_cal(ae_int32x2 R, ae_int32x2 state_x, ae_int32
 static inline void dcblock_set_circular(const struct audio_stream __sparse_cache *source)
 {
 	/* Set source as circular buffer 0 */
-	AE_SETCBEGIN0(audio_stream_get_addr(source));
-	AE_SETCEND0(audio_stream_get_end_addr(source));
+	AE_SETCBEGIN0(source->addr);
+	AE_SETCEND0(source->end_addr);
 }
 
 #if CONFIG_FORMAT_S16LE
@@ -43,14 +43,14 @@ static void dcblock_s16_default(const struct comp_dev *dev,
 				uint32_t frames)
 {
 	struct comp_data *cd = comp_get_drvdata(dev);
-	ae_int16 *src = audio_stream_get_rptr(source);
-	ae_int16 *dst = audio_stream_get_wptr(sink);
+	ae_int16 *src = (ae_int16 *)source->r_ptr;
+	ae_int16 *dst = (ae_int16 *)sink->w_ptr;
 	ae_int16 *in;
 	ae_int16 *out;
 	ae_int32x2 R, state_x, state_y, sample;
 	ae_int16x4 in_sample, out_sample;
 	int ch, i, n;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 	const int inc = nch * sizeof(ae_int16);
 	int samples = nch * frames;
 
@@ -91,14 +91,14 @@ static void dcblock_s24_default(const struct comp_dev *dev,
 				uint32_t frames)
 {
 	struct comp_data *cd = comp_get_drvdata(dev);
-	ae_int32 *src = audio_stream_get_rptr(source);
-	ae_int32 *dst = audio_stream_get_wptr(sink);
+	ae_int32 *src = (ae_int32 *)source->r_ptr;
+	ae_int32 *dst = (ae_int32 *)sink->w_ptr;
 	ae_int32 *in;
 	ae_int32 *out;
 	ae_int32x2 R, state_x, state_y;
 	ae_int32x2 in_sample, out_sample;
 	int ch, i, n;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 	const int inc = nch * sizeof(ae_int32);
 	int samples = nch * frames;
 
@@ -139,14 +139,14 @@ static void dcblock_s32_default(const struct comp_dev *dev,
 				uint32_t frames)
 {
 	struct comp_data *cd = comp_get_drvdata(dev);
-	ae_int32 *src = audio_stream_get_rptr(source);
-	ae_int32 *dst = audio_stream_get_wptr(sink);
+	ae_int32 *src = (ae_int32 *)source->r_ptr;
+	ae_int32 *dst = (ae_int32 *)sink->w_ptr;
 	ae_int32 *in;
 	ae_int32 *out;
 	ae_int32x2 R, state_x, state_y;
 	ae_int32x2 in_sample;
 	int ch, i, n;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 	const int inc = nch * sizeof(ae_int32);
 	int samples = nch * frames;
 

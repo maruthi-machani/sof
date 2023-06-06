@@ -25,7 +25,11 @@
 #include <zephyr/pm/policy.h>
 #include <version.h>
 #include <zephyr/sys/__assert.h>
-#include <zephyr/cache.h>
+#include <soc.h>
+
+#if defined(CONFIG_ARCH_XTENSA) && !defined(CONFIG_KERNEL_COHERENCE)
+#include <zephyr/arch/xtensa/cache.h>
+#endif
 
 #if CONFIG_SYS_HEAP_RUNTIME_STATS && CONFIG_IPC_MAJOR_4
 #include <zephyr/sys/sys_heap.h>
@@ -76,18 +80,6 @@ __section(".heap_mem") static uint8_t __aligned(PLATFORM_DCACHE_ALIGN) heapmem[H
 /* Zephyr native_posix links as a host binary and lacks the automated heap markers */
 #define HEAPMEM_SIZE (256 * 1024)
 char __aligned(8) heapmem[HEAPMEM_SIZE];
-
-#elif defined(CONFIG_ARM64)
-/* for ARM64 the heap is placed inside the .bss section.
- *
- * This is because we want to avoid introducing new sections in
- * the arm64 linker script. Also, is there really a need to place
- * it inside a special section?
- *
- * i.MX93 is the only ARM64-based platform so defining the heap this way
- * for all ARM64-based platforms should be safe.
- */
-static uint8_t __aligned(PLATFORM_DCACHE_ALIGN) heapmem[HEAPMEM_SIZE];
 
 #else
 
@@ -212,8 +204,7 @@ static void heap_free(struct k_heap *h, void *mem)
 
 	if (is_cached(mem)) {
 		mem_uncached = z_soc_uncached_ptr((__sparse_force void __sparse_cache *)mem);
-		sys_cache_data_flush_and_invd_range(mem,
-				sys_heap_usable_size(&h->heap, mem_uncached));
+		z_xtensa_cache_flush_inv(mem, sys_heap_usable_size(&h->heap, mem_uncached));
 
 		mem = mem_uncached;
 	}
@@ -356,8 +347,10 @@ void rfree(void *ptr)
 	heap_free(&sof_heap, ptr);
 }
 
-static int heap_init(void)
+static int heap_init(const struct device *unused)
 {
+	ARG_UNUSED(unused);
+
 	sys_heap_init(&sof_heap.heap, heapmem, HEAPMEM_SIZE);
 
 #if CONFIG_L3_HEAP

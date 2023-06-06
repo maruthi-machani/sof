@@ -829,9 +829,9 @@ static void probe_cb_produce(void *arg, enum notify_id type, void *data)
 	}
 
 	if (_probe->probe_points[i].purpose == PROBE_PURPOSE_EXTRACTION) {
-		format = probe_gen_format(audio_stream_get_frm_fmt(&buffer->stream),
-					  audio_stream_get_rate(&buffer->stream),
-					  audio_stream_get_channels(&buffer->stream));
+		format = probe_gen_format(buffer->stream.frame_fmt,
+					  buffer->stream.rate,
+					  buffer->stream.channels);
 		ret = probe_gen_header(buffer_id,
 				       cb_data->transaction_amount,
 				       format, &checksum);
@@ -840,9 +840,9 @@ static void probe_cb_produce(void *arg, enum notify_id type, void *data)
 
 		/* check if transaction amount exceeds component buffer end addr */
 		/* if yes: divide copying into two stages, head and tail */
-		if ((char *)cb_data->transaction_begin_address + cb_data->transaction_amount >
-		    (char *)audio_stream_get_end_addr(&buffer->stream)) {
-			head = (uintptr_t)audio_stream_get_end_addr(&buffer->stream) -
+		if ((char *)cb_data->transaction_begin_address +
+		    cb_data->transaction_amount > (char *)buffer->stream.end_addr) {
+			head = (uintptr_t)buffer->stream.end_addr -
 			       (uintptr_t)cb_data->transaction_begin_address;
 			tail = (uintptr_t)cb_data->transaction_amount - head;
 			ret = copy_to_pbuffer(&_probe->ext_dma.dmapb,
@@ -852,7 +852,7 @@ static void probe_cb_produce(void *arg, enum notify_id type, void *data)
 				goto err;
 
 			ret = copy_to_pbuffer(&_probe->ext_dma.dmapb,
-					      audio_stream_get_addr(&buffer->stream), tail);
+					      buffer->stream.addr, tail);
 			if (ret < 0)
 				goto err;
 		} else {
@@ -896,9 +896,9 @@ static void probe_cb_produce(void *arg, enum notify_id type, void *data)
 
 		/* check if transaction amount exceeds component buffer end addr */
 		/* if yes: divide copying into two stages, head and tail */
-		if ((char *)cb_data->transaction_begin_address + cb_data->transaction_amount >
-		    (char *)audio_stream_get_end_addr(&buffer->stream)) {
-			head = (char *)audio_stream_get_end_addr(&buffer->stream) -
+		if ((char *)cb_data->transaction_begin_address +
+			cb_data->transaction_amount > (char *)buffer->stream.end_addr) {
+			head = (char *)buffer->stream.end_addr -
 				(char *)cb_data->transaction_begin_address;
 			tail = cb_data->transaction_amount - head;
 
@@ -908,7 +908,7 @@ static void probe_cb_produce(void *arg, enum notify_id type, void *data)
 				goto err;
 
 			ret = copy_from_pbuffer(&dma->dmapb,
-						audio_stream_get_addr(&buffer->stream), tail);
+						buffer->stream.addr, tail);
 			if (ret < 0)
 				goto err;
 		} else {

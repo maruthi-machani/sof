@@ -70,7 +70,7 @@ static void igo_nr_capture_s16(struct comp_data *cd,
 			       struct audio_stream __sparse_cache *sink,
 			       int32_t frames)
 {
-	int32_t nch = audio_stream_get_channels(source);
+	int32_t nch = source->channels;
 	int32_t i;
 	int32_t j;
 	int32_t idx_in = 0;
@@ -129,7 +129,7 @@ static void igo_nr_capture_s24(struct comp_data *cd,
 			       struct audio_stream __sparse_cache *sink,
 			       int32_t frames)
 {
-	int32_t nch = audio_stream_get_channels(source);
+	int32_t nch = source->channels;
 	int32_t i;
 	int32_t j;
 	int32_t idx_in = 0;
@@ -188,7 +188,7 @@ static void igo_nr_capture_s32(struct comp_data *cd,
 			       struct audio_stream __sparse_cache *sink,
 			       int32_t frames)
 {
-	int32_t nch = audio_stream_get_channels(source);
+	int32_t nch = source->channels;
 	int32_t i;
 	int32_t j;
 	int32_t idx_in = 0;
@@ -249,7 +249,7 @@ static inline int32_t set_capture_func(struct comp_dev *dev)
 				  sink_list);
 
 	/* The igo_nr supports S16_LE data. Format converter is needed. */
-	switch (audio_stream_get_frm_fmt(&sourceb->stream)) {
+	switch (sourceb->stream.frame_fmt) {
 #if CONFIG_FORMAT_S16LE
 	case SOF_IPC_FRAME_S16_LE:
 		comp_info(dev, "set_capture_func(), SOF_IPC_FRAME_S16_LE");
@@ -399,10 +399,10 @@ static int32_t igo_nr_params(struct comp_dev *dev,
 	sink_c = buffer_acquire(sinkb);
 
 	/* set source/sink_frames/rate */
-	cd->source_rate = audio_stream_get_rate(&source_c->stream);
-	cd->sink_rate = audio_stream_get_rate(&sink_c->stream);
+	cd->source_rate = source_c->stream.rate;
+	cd->sink_rate = sink_c->stream.rate;
 
-	if (source_c->stream.channels != audio_stream_get_channels(&sink_c->stream)) {
+	if (source_c->stream.channels != sink_c->stream.channels) {
 		comp_err(dev, "igo_nr_params(), mismatch source/sink stream channels");
 		cd->invalid_param = true;
 	}

@@ -78,14 +78,15 @@ DAI_ADD(sof/pipe-mux-dai-playback.m4,
 # PCM Playback pipeline 3 on PCM 0 using max 2 channels of s16le.
 # 2000us deadline with priority 0 on core 0
 # this is connected to pipeline DAI 1
-PIPELINE_PCM_ADD(sof/pipe-host-playback.m4,
+PIPELINE_PCM_ADD(
+	ifdef(`DTS', sof/pipe-eq-iir-dts-codec-playback.m4, sof/pipe-host-playback.m4),
 	3, 0, 2, s16le,
 	2000, 0, 0,
 	48000, 48000, 48000,
 	SCHEDULE_TIME_DOMAIN_DMA,
 	PIPELINE_PLAYBACK_SCHED_COMP_1)
 #/**********************************************************************************/
-DAI_ADD(sof/pipe-echo-ref-dai-playback.m4,
+DAI_ADD(sof/pipe-dai-playback.m4,
 	9, ACPHS, 1, acp-amp-codec,
 	PIPELINE_SOURCE_1, 2, s16le,
 	2000, 0, 0, SCHEDULE_TIME_DOMAIN_DMA)
@@ -100,7 +101,8 @@ DAI_CONFIG(ACPHS, 1, 1, acp-amp-codec,
 
 # PCM Media Playback pipeline 3 on PCM 1 using max 2 channels of s16le.
 # 2000us deadline with priority 0 on core 0
-PIPELINE_PCM_ADD(sof/pipe-host-playback.m4,
+PIPELINE_PCM_ADD(
+	ifdef(`DTS', sof/pipe-eq-iir-dts-codec-playback.m4, sof/pipe-host-playback.m4),
 	4, 1, 2, s16le,
 	2000, 0, 0,
 	48000, 48000, 48000,

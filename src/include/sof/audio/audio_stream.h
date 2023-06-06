@@ -77,130 +77,6 @@ struct audio_stream {
 	bool underrun_permitted; /**< indicates whether underrun is permitted */
 };
 
-static inline void *audio_stream_get_rptr(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->r_ptr;
-}
-
-static inline void *audio_stream_get_wptr(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->w_ptr;
-}
-
-static inline void *audio_stream_get_end_addr(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->end_addr;
-}
-
-static inline void *audio_stream_get_addr(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->addr;
-}
-
-static inline uint32_t audio_stream_get_size(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->size;
-}
-
-static inline uint32_t audio_stream_get_avail(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->avail;
-}
-
-static inline uint32_t audio_stream_get_free(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->free;
-}
-
-static inline enum sof_ipc_frame audio_stream_get_frm_fmt(
-	const struct audio_stream __sparse_cache *buf)
-{
-	return buf->frame_fmt;
-}
-
-static inline enum sof_ipc_frame audio_stream_get_valid_fmt(
-	const struct audio_stream __sparse_cache *buf)
-{
-	return buf->valid_sample_fmt;
-}
-
-static inline uint32_t audio_stream_get_rate(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->rate;
-}
-
-static inline uint32_t audio_stream_get_channels(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->channels;
-}
-
-static inline bool audio_stream_get_underrun(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->underrun_permitted;
-}
-
-static inline bool audio_stream_get_overrun(const struct audio_stream __sparse_cache *buf)
-{
-	return buf->overrun_permitted;
-}
-
-static inline void audio_stream_set_rptr(struct audio_stream __sparse_cache *buf, void *val)
-{
-	buf->r_ptr = val;
-}
-
-static inline void audio_stream_set_wptr(struct audio_stream __sparse_cache *buf, void *val)
-{
-	buf->w_ptr = val;
-}
-
-static inline void audio_stream_set_end_addr(struct audio_stream __sparse_cache *buf, void *val)
-{
-	buf->end_addr = val;
-}
-
-static inline void audio_stream_set_addr(struct audio_stream __sparse_cache *buf, void *val)
-{
-	buf->addr = val;
-}
-
-static inline void audio_stream_set_size(struct audio_stream __sparse_cache *buf, uint32_t val)
-{
-	buf->size = val;
-}
-
-static inline void audio_stream_set_avail(struct audio_stream __sparse_cache *buf, uint32_t val)
-{
-	buf->avail = val;
-}
-
-static inline void audio_stream_set_free(struct audio_stream __sparse_cache *buf, uint32_t val)
-{
-	buf->free = val;
-}
-
-static inline void audio_stream_set_frm_fmt(struct audio_stream __sparse_cache *buf,
-					    enum sof_ipc_frame val)
-{
-	buf->frame_fmt = val;
-}
-
-static inline void audio_stream_set_valid_fmt(struct audio_stream __sparse_cache *buf,
-					      enum sof_ipc_frame val)
-{
-	buf->valid_sample_fmt = val;
-}
-
-static inline void audio_stream_set_rate(struct audio_stream __sparse_cache *buf, uint32_t val)
-{
-	buf->rate = val;
-}
-
-static inline void audio_stream_set_channels(struct audio_stream __sparse_cache *buf, uint16_t val)
-{
-	buf->channels = val;
-}
-
 /**
  * Retrieves readable address of a sample at specified index (see versions of
  * this macro specialized for various sample types).
@@ -685,12 +561,6 @@ static inline void audio_stream_init(struct audio_stream __sparse_cache *buffer,
 	buffer->size = size;
 	buffer->addr = buff_addr;
 	buffer->end_addr = (char *)buffer->addr + size;
-
-	/* set the default alignment info.
-	 * set byte_align as 1 means no alignment limit on byte.
-	 * set frame_align as 1 means no alignment limit on frame.
-	 */
-	audio_stream_init_alignment_constants(1, 1, buffer);
 	audio_stream_reset(buffer);
 }
 
@@ -908,8 +778,8 @@ static inline int audio_stream_set_zero(struct audio_stream __sparse_cache *buff
 
 static inline void audio_stream_fmt_conversion(enum ipc4_bit_depth depth,
 					       enum ipc4_bit_depth valid,
-					       enum sof_ipc_frame *frame_fmt,
-					       enum sof_ipc_frame *valid_fmt,
+					       enum sof_ipc_frame __sparse_cache *frame_fmt,
+					       enum sof_ipc_frame __sparse_cache *valid_fmt,
 					       enum ipc4_sample_type type)
 {
 	/* IPC4_DEPTH_16BIT (16) <---> SOF_IPC_FRAME_S16_LE (0)

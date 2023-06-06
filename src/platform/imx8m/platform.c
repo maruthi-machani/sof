@@ -203,6 +203,7 @@ int platform_init(struct sof *sof)
 	if (ret < 0)
 		return -ENODEV;
 
+#ifndef __ZEPHYR__
 #if CONFIG_TRACE
 	/* Initialize DMA for Trace*/
 	trace_point(TRACE_BOOT_PLATFORM_DMA_TRACE);
@@ -211,6 +212,7 @@ int platform_init(struct sof *sof)
 
 	/* show heap status */
 	heap_trace_all(1);
+#endif /* __ZEPHYR__ */
 
 	return 0;
 }

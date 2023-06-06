@@ -82,13 +82,11 @@ static int mixer_process(struct processing_module *mod,
 	struct mixer_data *md = module_get_private_data(mod);
 	struct comp_dev *dev = mod->dev;
 	const struct audio_stream __sparse_cache *sources_stream[PLATFORM_MAX_STREAMS];
-	int sources_indices[PLATFORM_MAX_STREAMS];
-	int32_t i = 0, j = 0;
+	int32_t i = 0;
 	uint32_t frames = INT32_MAX;
 	/* Redundant, but helps the compiler */
 	uint32_t source_bytes = 0;
 	uint32_t sink_bytes;
-	int active_input_buffers = 0;
 
 	comp_dbg(dev, "mixer_process() %d", num_input_buffers);
 
@@ -107,11 +105,10 @@ static int mixer_process(struct processing_module *mod,
 		if (avail_frames == 0)
 			continue;
 
-		active_input_buffers++;
 		frames = MIN(frames, avail_frames);
 	}
 
-	if (!active_input_buffers) {
+	if (!num_input_buffers || (frames == 0 && md->sources_inactive)) {
 		/*
 		 * Generate silence when sources are inactive. When
 		 * sources change to active, additionally keep
@@ -122,11 +119,18 @@ static int mixer_process(struct processing_module *mod,
 		if (!audio_stream_set_zero(mod->output_buffers[0].data, sink_bytes))
 			mod->output_buffers[0].size = sink_bytes;
 
+		md->sources_inactive = true;
+
 		return 0;
 	}
 
 	/* Every source has the same format, so calculate bytes based on the first one */
 	source_bytes = frames * audio_stream_frame_bytes(mod->input_buffers[0].data);
+
+	if (md->sources_inactive) {
+		md->sources_inactive = false;
+		comp_dbg(dev, "mixer_copy exit sources_inactive state");
+	}
 
 	sink_bytes = frames * audio_stream_frame_bytes(mod->output_buffers[0].data);
 
@@ -134,27 +138,15 @@ static int mixer_process(struct processing_module *mod,
 		 source_bytes, sink_bytes);
 
 	/* mix streams */
-	for (i = 0; i < num_input_buffers; i++) {
-		uint32_t avail_frames;
+	for (i = 0; i < num_input_buffers; i++)
+		sources_stream[i] = mod->input_buffers[i].data;
 
-		avail_frames = audio_stream_avail_frames_aligned(mod->input_buffers[i].data,
-								 mod->output_buffers[0].data);
-
-		/* if one source is inactive, skip it */
-		if (avail_frames == 0)
-			continue;
-
-		sources_indices[j] = i;
-		sources_stream[j++] = mod->input_buffers[i].data;
-	}
-
-	if (j)
-		md->mix_func(dev, mod->output_buffers[0].data, sources_stream, j, frames);
+	md->mix_func(dev, mod->output_buffers[0].data, sources_stream, num_input_buffers, frames);
 	mod->output_buffers[0].size = sink_bytes;
 
 	/* update source buffer consumed bytes */
-	for (i = 0; i < j; i++)
-		mod->input_buffers[sources_indices[i]].consumed = source_bytes;
+	for (i = 0; i < num_input_buffers; i++)
+		mod->input_buffers[i].consumed = source_bytes;
 
 	return 0;
 }

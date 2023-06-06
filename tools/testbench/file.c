@@ -617,7 +617,6 @@ static struct comp_dev *file_new(const struct comp_driver *drv,
 	cd->fs.write_failed = false;
 	cd->fs.n = 0;
 	cd->fs.copy_count = 0;
-	cd->fs.cycles_count = 0;
 	dev->state = COMP_STATE_READY;
 	return dev;
 
@@ -722,7 +721,7 @@ static int file_params(struct comp_dev *dev,
 	samples = periods * dev->frames * stream->channels;
 	switch (stream->frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
-		ret = buffer_set_size(buffer, samples * sizeof(int16_t), 0);
+		ret = buffer_set_size(buffer, samples * sizeof(int16_t));
 		if (ret < 0) {
 			fprintf(stderr, "error: file buffer size set\n");
 			return ret;
@@ -732,7 +731,7 @@ static int file_params(struct comp_dev *dev,
 		cd->file_func = file_s16;
 		break;
 	case SOF_IPC_FRAME_S24_4LE:
-		ret = buffer_set_size(buffer, samples * sizeof(int32_t), 0);
+		ret = buffer_set_size(buffer, samples * sizeof(int32_t));
 		if (ret < 0) {
 			fprintf(stderr, "error: file buffer size set\n");
 			return ret;
@@ -742,7 +741,7 @@ static int file_params(struct comp_dev *dev,
 		cd->file_func = file_s24;
 		break;
 	case SOF_IPC_FRAME_S32_LE:
-		ret = buffer_set_size(buffer, samples * sizeof(int32_t), 0);
+		ret = buffer_set_size(buffer, samples * sizeof(int32_t));
 		if (ret < 0) {
 			fprintf(stderr, "error: file buffer size set\n");
 			return ret;
@@ -804,13 +803,11 @@ static int file_copy(struct comp_dev *dev)
 	struct comp_buffer *buffer;
 	struct dai_data *dd = comp_get_drvdata(dev);
 	struct file_comp_data *cd = comp_get_drvdata(dd->dai);
-	uint64_t cycles0, cycles1;
 	int snk_frames;
 	int src_frames;
 	int bytes = cd->sample_container_bytes;
 	int ret = 0;
 
-	tb_getcycles(&cycles0);
 	switch (cd->fs.mode) {
 	case FILE_READ:
 		/* file component sink buffer */
@@ -862,9 +859,6 @@ static int file_copy(struct comp_dev *dev)
 			  cd->fs.reached_eof);
 		schedule_task_cancel(dev->pipeline->pipe_task);
 	}
-
-	tb_getcycles(&cycles1);
-	cd->fs.cycles_count += cycles1 - cycles0;
 	return ret;
 }
 

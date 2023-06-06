@@ -16,8 +16,6 @@
 #include <ipc/compress_params.h>
 #include <rtos/init.h>
 
-LOG_MODULE_REGISTER(cadence, CONFIG_SOF_LOG_LEVEL);
-
 /* d8218443-5ff3-4a4c-b388-6cfe07b956aa */
 DECLARE_SOF_RT_UUID("cadence_codec", cadence_uuid, 0xd8218443, 0x5ff3, 0x4a4c,
 		    0xb3, 0x88, 0x6c, 0xfe, 0x07, 0xb9, 0x56, 0xaa);
@@ -583,11 +581,10 @@ cadence_codec_process(struct processing_module *mod,
 		      struct output_stream_buffer *output_buffers, int num_output_buffers)
 {
 	struct comp_buffer *local_buff;
-	struct comp_buffer __sparse_cache *buffer_c;
 	struct comp_dev *dev = mod->dev;
 	struct module_data *codec = &mod->priv;
 	struct cadence_codec_data *cd = codec->private;
-	int free_bytes, output_bytes = cadence_codec_get_samples(mod) *
+	int output_bytes = cadence_codec_get_samples(mod) *
 				mod->stream_params->sample_container_bytes *
 				mod->stream_params->channels;
 	uint32_t remaining = input_buffers[0].size;
@@ -614,10 +611,7 @@ cadence_codec_process(struct processing_module *mod,
 
 	/* do not proceed with processing if not enough free space left in the local buffer */
 	local_buff = list_first_item(&mod->sink_buffer_list, struct comp_buffer, sink_list);
-	buffer_c = buffer_acquire(local_buff);
-	free_bytes = audio_stream_get_free(&buffer_c->stream);
-	buffer_release(buffer_c);
-	if (free_bytes < output_bytes)
+	if (local_buff->stream.free < output_bytes)
 		return -ENOSPC;
 
 	/* Proceed only if we have enough data to fill the module buffer completely */

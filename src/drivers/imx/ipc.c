@@ -33,16 +33,6 @@
 
 LOG_MODULE_REGISTER(ipc_task, CONFIG_SOF_LOG_LEVEL);
 
-#ifdef CONFIG_ARM64
-/* thanks to the fact that ARM's GIC is supported
- * by Zephyr there's no need to clear interrupts
- * explicitly. This should already be done by Zephyr
- * after executing the ISR. This macro is used for
- * linkage purposes on ARM64-based platforms.
- */
-#define interrupt_clear(irq)
-#endif /* CONFIG_ARM64 */
-
 /* 389c9186-5a7d-4ad1-a02c-a02ecdadfb33 */
 DECLARE_SOF_UUID("ipc-task", ipc_task_uuid, 0x389c9186, 0x5a7d, 0x4ad1,
 		 0xa0, 0x2c, 0xa0, 0x2e, 0xcd, 0xad, 0xfb, 0x33);
@@ -125,7 +115,6 @@ void ipc_platform_complete_cmd(struct ipc *ipc)
 
 	// TODO: signal audio work to enter D3 in normal context
 	/* are we about to enter D3 ? */
-#ifndef CONFIG_IMX93_A55
 	if (ipc->pm_prepare_D3) {
 		while (1)
 			/*
@@ -135,7 +124,6 @@ void ipc_platform_complete_cmd(struct ipc *ipc)
 			 */
 			wait_for_interrupt(0);
 	}
-#endif /* CONFIG_IMX93_A55 */
 }
 
 int ipc_platform_send_msg(const struct ipc_msg *msg)
@@ -144,8 +132,7 @@ int ipc_platform_send_msg(const struct ipc_msg *msg)
 
 	/* can't send notification when one is in progress */
 	if (ipc->is_notification_pending ||
-	    imx_mu_read(IMX_MU_xCR(IMX_MU_VERSION, IMX_MU_GCR)) &
-					IMX_MU_xCR_GIRn(IMX_MU_VERSION, 1)) {
+	    imx_mu_read(IMX_MU_xCR(IMX_MU_VERSION, IMX_MU_GCR)) & IMX_MU_xCR_GIRn(IMX_MU_VERSION, 1)) {
 		return -EBUSY;
 	}
 
@@ -159,11 +146,6 @@ int ipc_platform_send_msg(const struct ipc_msg *msg)
 	/* now interrupt host to tell it we have sent a message */
 	imx_mu_xcr_rmw(IMX_MU_VERSION, IMX_MU_GCR, IMX_MU_xCR_GIRn(IMX_MU_VERSION, 1), 0);
 	return 0;
-}
-
-void ipc_platform_send_msg_direct(const struct ipc_msg *msg)
-{
-	/* TODO: add support */
 }
 
 #if CONFIG_HOST_PTABLE
@@ -241,7 +223,8 @@ int platform_ipc_init(struct ipc *ipc)
 	 * enable GP #0 for Host -> DSP message notification
 	 * enable GP #1 for DSP -> Host message confirmation
 	 */
-	imx_mu_xcr_rmw(IMX_MU_VERSION, IMX_MU_GIER, IMX_MU_xCR_GIEn(IMX_MU_VERSION, 0) |
+	imx_mu_xcr_rmw(IMX_MU_VERSION, IMX_MU_GIER,
+			IMX_MU_xCR_GIEn(IMX_MU_VERSION, 0) |
 			IMX_MU_xCR_GIEn(IMX_MU_VERSION, 1), 0);
 
 	return 0;
@@ -323,8 +306,7 @@ int ipc_platform_poll_is_host_ready(void)
 int ipc_platform_poll_tx_host_msg(struct ipc_msg *msg)
 {
 	/* can't send notification when one is in progress */
-	if (imx_mu_read(IMX_MU_xCR(IMX_MU_VERSION, IMX_MU_GCR)) &
-		IMX_MU_xCR_GIRn(IMX_MU_VERSION, 1))
+	if (imx_mu_read(IMX_MU_xCR(IMX_MU_VERSION, IMX_MU_GCR)) & IMX_MU_xCR_GIRn(IMX_MU_VERSION, 1))
 		return 0;
 
 	/* now send the message */

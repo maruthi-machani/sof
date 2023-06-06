@@ -181,7 +181,7 @@ static int ghd_params(struct comp_dev *dev,
 	if (source_c->stream.channels != 1) {
 		comp_err(dev, "ghd_params(): Only single-channel supported");
 		ret = -EINVAL;
-	} else if (audio_stream_get_frm_fmt(&source_c->stream) != SOF_IPC_FRAME_S16_LE) {
+	} else if (source_c->stream.frame_fmt != SOF_IPC_FRAME_S16_LE) {
 		comp_err(dev, "ghd_params(): Only S16_LE supported");
 		ret = -EINVAL;
 	} else if (source_c->stream.rate != KPB_SAMPLNG_FREQUENCY) {
@@ -406,24 +406,23 @@ static int ghd_copy(struct comp_dev *dev)
 
 	comp_dbg(dev, "ghd_copy() avail_bytes %u", bytes);
 	comp_dbg(dev, "buffer begin/r_ptr/end [0x%x 0x%x 0x%x]",
-		 (uint32_t)audio_stream_get_addr(stream),
-		 (uint32_t)audio_stream_get_rptr(stream),
-		 (uint32_t)audio_stream_get_end_addr(stream));
+		 (uint32_t)stream->addr,
+		 (uint32_t)stream->r_ptr,
+		 (uint32_t)stream->end_addr);
 
 	/* copy and perform detection */
 	buffer_stream_invalidate(source_c, bytes);
 
-	tail_bytes = (char *)audio_stream_get_end_addr(stream) -
-		(char *)audio_stream_get_rptr(stream);
+	tail_bytes = (char *)stream->end_addr - (char *)stream->r_ptr;
 	if (bytes <= tail_bytes)
 		tail_bytes = bytes;
 	else
 		head_bytes = bytes - tail_bytes;
 
 	if (tail_bytes)
-		ghd_detect(dev, stream, audio_stream_get_rptr(stream), tail_bytes);
+		ghd_detect(dev, stream, stream->r_ptr, tail_bytes);
 	if (head_bytes)
-		ghd_detect(dev, stream, audio_stream_get_addr(stream), head_bytes);
+		ghd_detect(dev, stream, stream->addr, head_bytes);
 
 	/* calc new available */
 	comp_update_buffer_consume(source_c, bytes);

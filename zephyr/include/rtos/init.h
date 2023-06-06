@@ -9,8 +9,9 @@
 #include <zephyr/init.h>
 
 #define SOF_MODULE_INIT(name, init) \
-static int zephyr_##name##_init(void) \
+static int zephyr_##name##_init(const struct device *dev) \
 { \
+	ARG_UNUSED(dev); \
 	init(); \
 	return 0; \
 } \

@@ -31,8 +31,8 @@ void eq_fir_2x_s32(struct fir_state_32x16 fir[], struct input_stream_buffer *bso
 	struct audio_stream __sparse_cache *source = bsource->data;
 	struct audio_stream __sparse_cache *sink = bsink->data;
 	struct fir_state_32x16 *f;
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *snk = audio_stream_get_wptr(sink);
+	int32_t *src = (int32_t *)source->r_ptr;
+	int32_t *snk = (int32_t *)sink->w_ptr;
 	int32_t *x0;
 	int32_t *y0;
 	int32_t *x1;
@@ -41,7 +41,7 @@ void eq_fir_2x_s32(struct fir_state_32x16 fir[], struct input_stream_buffer *bso
 	int i;
 	int rshift;
 	int lshift;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 	int inc = nch << 1;
 
 	for (ch = 0; ch < nch; ch++) {
@@ -75,8 +75,8 @@ void eq_fir_2x_s24(struct fir_state_32x16 fir[], struct input_stream_buffer *bso
 	struct audio_stream __sparse_cache *source = bsource->data;
 	struct audio_stream __sparse_cache *sink = bsink->data;
 	struct fir_state_32x16 *f;
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *snk = audio_stream_get_wptr(sink);
+	int32_t *src = (int32_t *)source->r_ptr;
+	int32_t *snk = (int32_t *)sink->w_ptr;
 	int32_t *x0;
 	int32_t *y0;
 	int32_t *x1;
@@ -87,7 +87,7 @@ void eq_fir_2x_s24(struct fir_state_32x16 fir[], struct input_stream_buffer *bso
 	int i;
 	int rshift;
 	int lshift;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 	int inc = nch << 1;
 
 	for (ch = 0; ch < nch; ch++) {
@@ -123,8 +123,8 @@ void eq_fir_2x_s16(struct fir_state_32x16 fir[], struct input_stream_buffer *bso
 	struct audio_stream __sparse_cache *source = bsource->data;
 	struct audio_stream __sparse_cache *sink = bsink->data;
 	struct fir_state_32x16 *f;
-	int16_t *src = audio_stream_get_rptr(source);
-	int16_t *snk = audio_stream_get_wptr(sink);
+	int16_t *src = (int16_t *)source->r_ptr;
+	int16_t *snk = (int16_t *)sink->w_ptr;
 	int16_t *x0;
 	int16_t *y0;
 	int16_t *x1;
@@ -135,7 +135,7 @@ void eq_fir_2x_s16(struct fir_state_32x16 fir[], struct input_stream_buffer *bso
 	int i;
 	int rshift;
 	int lshift;
-	int nch = audio_stream_get_channels(source);
+	int nch = source->channels;
 	int inc = nch << 1;
 
 	for (ch = 0; ch < nch; ch++) {

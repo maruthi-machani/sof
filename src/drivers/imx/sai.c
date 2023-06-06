@@ -89,6 +89,10 @@ static void sai_start(struct dai *dai, int direction)
 	/* enable DMA requests */
 	dai_update_bits(dai, REG_SAI_XCSR(direction),
 			REG_SAI_CSR_FRDE, REG_SAI_CSR_FRDE);
+#ifdef CONFIG_IMX8M
+	dai_update_bits(dai, REG_SAI_MCTL, REG_SAI_MCTL_MCLK_EN,
+			REG_SAI_MCTL_MCLK_EN);
+#endif
 
 	chan_idx = BIT(0);
 	/* RX3 supports capture on imx8ulp */
@@ -345,7 +349,8 @@ static inline int sai_set_config(struct dai *dai, struct ipc_config_dai *common_
 	dai_update_bits(dai, REG_SAI_XCR4(REG_TX_DIR), mask_cr4, val_cr4);
 	dai_update_bits(dai, REG_SAI_XCR5(REG_TX_DIR), mask_cr5, val_cr5);
 	/* turn on (set to zero) stereo slot */
-	dai_update_bits(dai, REG_SAI_XMR(REG_TX_DIR), REG_SAI_XMR_MASK, twm);
+	dai_update_bits(dai, REG_SAI_XMR(REG_TX_DIR),  REG_SAI_XMR_MASK,
+		       twm);
 
 	val_cr2 |= REG_SAI_CR2_SYNC;
 	mask_cr2 |= REG_SAI_CR2_SYNC_MASK;
@@ -358,17 +363,6 @@ static inline int sai_set_config(struct dai *dai, struct ipc_config_dai *common_
 	/* turn on (set to zero) stereo slot */
 	dai_update_bits(dai, REG_SAI_XMR(REG_RX_DIR), REG_SAI_XMR_MASK,
 			twm);
-
-#if defined(CONFIG_IMX8M) || defined(CONFIG_IMX93_A55)
-	/*
-	 * For i.MX8MP, MCLK is bound with TX enable bit.
-	 * Therefore, enable transmitter to output MCLK
-	 */
-	dai_update_bits(dai, REG_SAI_XCSR(DAI_DIR_PLAYBACK),
-			REG_SAI_CSR_TERE, REG_SAI_CSR_TERE);
-	dai_update_bits(dai, REG_SAI_MCTL, REG_SAI_MCTL_MCLK_EN,
-			REG_SAI_MCTL_MCLK_EN);
-#endif
 
 	return 0;
 }

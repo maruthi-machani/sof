@@ -38,12 +38,11 @@ EOFHELP
 
  void ipc_cmd(struct ipc_cmd_hdr *_hdr)
  {
-+       __ASSERT(false, "test the IPC3 fuzzer test");
++       __ASSERT(false, "test the fuzzer test");
 +
         struct sof_ipc_cmd_hdr *hdr = ipc_from_hdr(_hdr);
 EOF_TEST_PATCH
 
-# When fuzzing IPC4, make the same change in src/ipc/ipc4/handler.c#ipc_cmd()
 
 main()
 {

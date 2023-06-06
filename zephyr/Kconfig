@@ -29,19 +29,13 @@ config SOF_ZEPHYR_STRICT_HEADERS
 	  If unsure, say n.
 
 config DMA_DOMAIN
-	bool "Enable the usage of DMA domain."
-	default y if IMX
+	bool "Experimental: Enable the usage of DMA domain."
+	default n
 	help
 	  This enables the usage of the DMA domain in scheduling.
-
-config DMA_DOMAIN_SEM_LIMIT
-	int "Number of resources the Zephyr's DMA domain can accumulate"
-	depends on DMA_DOMAIN
-	default 10
-	help
-	  Set this value according to the load of the system. Please make sure
-	  that SEM_LIMIT covers the maximum number of tasks your system will be
-	  executing at some point (worst case).
+	  This will most likely come to replace dma_multi_chan
+	  and dma_single_chan in Zephyr once it becomes more
+	  stable.
 
 config ZEPHYR_DP_SCHEDULER
 	bool "use Zephyr thread based DP scheduler"
@@ -49,7 +43,6 @@ config ZEPHYR_DP_SCHEDULER
 	default n
 	depends on IPC_MAJOR_4
 	depends on ZEPHYR_SOF_MODULE
-	depends on ACE
 	help
 	  Enable Data Processing preemptive scheduler based on
 	  Zephyr preemptive threads.

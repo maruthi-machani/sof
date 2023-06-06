@@ -14,11 +14,10 @@ set(TPLGS
 # CAVS SSP topology for TGL
 "cavs-nocodec\;sof-tgl-nocodec\;NUM_DMICS=4,PDM1_MIC_A_ENABLE=1,PDM1_MIC_B_ENABLE=1,\
 PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-tgl-nocodec.bin,DEEPBUFFER_FW_DMA_MS=100,\
-SSP0_MIXER_2LEVEL=1,PLATFORM=tgl"
+SSP0_MIXER_2LEVEL=1"
 
 "cavs-nocodec\;sof-adl-nocodec\;NUM_DMICS=4,PDM1_MIC_A_ENABLE=1,PDM1_MIC_B_ENABLE=1,\
-PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-adl-nocodec.bin,DEEPBUFFER_FW_DMA_MS=100,\
-PLATFORM=adl"
+PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-adl-nocodec.bin,DEEPBUFFER_FW_DMA_MS=100"
 
 # SDW topology for MTL
 "cavs-sdw\;mtl-sdw\;NUM_HDMIS=0"
@@ -27,29 +26,8 @@ PLATFORM=adl"
 "cavs-sdw\;mtl-sdw-hdmi\;PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-mtl-sdw-hdmi.bin"
 
 # SSP topology for MTL
-"cavs-nocodec\;sof-mtl-nocodec\;PLATFORM=mtl,NUM_DMICS=4,PDM1_MIC_A_ENABLE=1,PDM1_MIC_B_ENABLE=1,\
-PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-mtl-nocodec.bin,DEEPBUFFER_FW_DMA_MS=100,\
-DEEPBUFFER_D0I3_COMPATIBLE=true"
-"cavs-nocodec\;sof-mtl-nocodec-ssp0-ssp2\;PLATFORM=mtl,NUM_DMICS=2,SSP1_ENABLED=false,\
-PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-mtl-nocodec.bin,DEEPBUFFER_FW_DMA_MS=100,\
-DEEPBUFFER_D0I3_COMPATIBLE=true"
-
-"cavs-nocodec-multicore\;sof-mtl-nocodec-multicore\;PLATFORM=mtl,SSP1_ENABLED=true,SSP0_CORE_ID=0,\
-SSP1_CORE_ID=1,SSP2_CORE_ID=2,PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-mtl-nocodec.bin"
-
-# SSP topology for LNL FPGA with lower DMIC IO clock of 19.2MHz, 2ch PDM1 enabled
-"cavs-nocodec\;sof-lnl-nocodec-fpga-2ch-pdm1\;PLATFORM=lnl,NUM_DMICS=2,PDM1_MIC_A_ENABLE=1,\
-PDM1_MIC_B_ENABLE=1,PDM0_MIC_A_ENABLE=0,PDM0_MIC_B_ENABLE=0,PREPROCESS_PLUGINS=nhlt,\
-NHLT_BIN=nhlt-sof-lnl-nocodec-fpga-2ch-pdm1.bin,PASSTHROUGH=true,DMIC_IO_CLK=19200000"
-
-# SSP topology for LNL FPGA with lower DMIC IO clock of 19.2MHz, 2ch PDM0 enabled
-"cavs-nocodec\;sof-lnl-nocodec-fpga-2ch-pdm0\;PLATFORM=lnl,NUM_DMICS=2,PREPROCESS_PLUGINS=nhlt,\
-NHLT_BIN=nhlt-sof-lnl-nocodec-fpga-2ch-pdm0.bin,PASSTHROUGH=true,DMIC_IO_CLK=19200000"
-
-# SSP topology for LNL FPGA with lower DMIC IO clock of 19.2MHz, 4ch both PDM0 and PDM1 enabled
-"cavs-nocodec\;sof-lnl-nocodec-fpga-4ch\;PLATFORM=lnl,NUM_DMICS=4,PDM1_MIC_A_ENABLE=1,\
-PDM1_MIC_B_ENABLE=1,PREPROCESS_PLUGINS=nhlt,\
-NHLT_BIN=nhlt-sof-lnl-nocodec-fpga-4ch.bin,PASSTHROUGH=true,DMIC_IO_CLK=19200000"
+"cavs-nocodec\;sof-mtl-nocodec\;PLATFORM=mtl,NUM_DMICS=2,\
+PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-mtl-nocodec.bin,DEEPBUFFER_FW_DMA_MS=100"
 
 # CAVS HDA topology with mixer-based efx eq pipelines for HDA and passthrough pipelines for HDMI
 "sof-hda-generic\;sof-hda-efx-generic\;HDA_CONFIG=efx,USE_CHAIN_DMA=true,DEEPBUFFER_FW_DMA_MS=100,\
@@ -63,19 +41,5 @@ PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-hda-efx-generic-4ch.bin,USE_CHAIN_DMA=
 DEEPBUFFER_FW_DMA_MS=100,EFX_FIR_PARAMS=passthrough,EFX_IIR_PARAMS=passthrough"
 # CAVS HDA topology with gain and SRC before mixin for HDA and passthrough pipelines for HDMI
 "sof-hda-generic\;sof-hda-src-generic\;HDA_CONFIG=src,USE_CHAIN_DMA=true,DEEPBUFFER_FW_DMA_MS=100"
-
-# BT offload for tgl
-"cavs-nocodec-bt\;sof-nocodec-bt-tgl\;PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-nocodec-bt-tgl.bin,\
-PLATFORM=tgl"
-# BT offload loopback test topology (lbm) for tgl
-"cavs-nocodec-bt\;sof-nocodec-bt-tgl-lbm\;BT_LOOPBACK_MODE=true,PLATFORM=tgl,\
-PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-nocodec-bt-tgl-lbm.bin"
-
-# BT offload for mtl
-"cavs-nocodec-bt\;sof-nocodec-bt-mtl\;PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-nocodec-bt-mtl.bin,\
-PLATFORM=mtl"
-# BT offload loopback test topology (lbm) for mtl
-"cavs-nocodec-bt\;sof-nocodec-bt-mtl-lbm\;BT_LOOPBACK_MODE=true,PLATFORM=mtl,\
-PREPROCESS_PLUGINS=nhlt,NHLT_BIN=nhlt-sof-nocodec-bt-mtl-lbm.bin"
 )
 

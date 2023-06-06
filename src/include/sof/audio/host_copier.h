@@ -20,13 +20,10 @@
 #include <sof/audio/ipc-config.h>
 #include <ipc/stream.h>
 #include <sof/lib/notifier.h>
-#include <ipc4/copier.h>
-
-typedef void (*copy_callback_t)(struct comp_dev *dev, size_t bytes);
 
 struct host_data;
 /** \brief Host copy function interface. */
-typedef int (*host_copy_func)(struct host_data *hd, struct comp_dev *dev, copy_callback_t cb);
+typedef int (*host_copy_func)(struct host_data *hd, struct comp_dev *dev);
 
 /**
  * \brief Host buffer info.
@@ -54,8 +51,6 @@ struct host_data {
 #ifdef __ZEPHYR__
 	struct dma_config z_config;
 #endif
-	struct comp_dev *cb_dev;
-
 	struct comp_buffer *dma_buffer;
 	struct comp_buffer *local_buffer;
 
@@ -98,24 +93,63 @@ struct host_data {
 	struct ipc_msg *msg;	/**< host notification */
 };
 
-int host_common_new(struct host_data *hd, struct comp_dev *dev,
+#if CONFIG_ZEPHYR_NATIVE_DRIVERS
+int host_zephyr_new(struct host_data *hd, struct comp_dev *dev,
 		    const struct ipc_config_host *ipc_host, uint32_t config_id);
-void host_common_free(struct host_data *hd);
-int host_common_prepare(struct host_data *hd);
-void host_common_reset(struct host_data *hd, uint16_t state);
-int host_common_trigger(struct host_data *hd, struct comp_dev *dev, int cmd);
-int host_common_params(struct host_data *hd, struct comp_dev *dev,
-		       struct sof_ipc_stream_params *params, notifier_callback_t cb);
-int host_common_copy(struct host_data *hd, struct comp_dev *dev, copy_callback_t cb);
-void host_common_update(struct host_data *hd, struct comp_dev *dev, uint32_t bytes);
-void host_common_one_shot(struct host_data *hd, uint32_t bytes);
-int copier_host_create(struct comp_dev *parent_dev, struct copier_data *cd,
-		       struct comp_ipc_config *config,
-		       const struct ipc4_copier_module_cfg *copier_cfg,
-		       int dir);
-void copier_host_free(struct copier_data *cd);
-int copier_host_params(struct copier_data *cd, struct comp_dev *dev,
-		       struct sof_ipc_stream_params *params);
-void copier_host_dma_cb(struct comp_dev *dev, size_t bytes);
 
+void host_zephyr_free(struct host_data *hd);
+
+int host_zephyr_prepare(struct host_data *hd);
+
+void host_zephyr_reset(struct host_data *hd, uint16_t state);
+
+int host_zephyr_trigger(struct host_data *hd, struct comp_dev *dev, int cmd);
+
+int host_zephyr_params(struct host_data *hd, struct comp_dev *dev,
+		       struct sof_ipc_stream_params *params);
+
+int host_zephyr_copy(struct host_data *hd, struct comp_dev *dev);
+
+void host_update_position(struct host_data *hd, struct comp_dev *dev, uint32_t bytes);
+
+void host_one_shot_cb(struct host_data *hd, uint32_t bytes);
+#else
+static inline int host_zephyr_new(struct host_data *hd, struct comp_dev *dev,
+				  const struct ipc_config_host *ipc_host, uint32_t config_id)
+{
+	return 0;
+}
+
+static inline void host_zephyr_free(struct host_data *hd) {}
+
+static inline int host_zephyr_prepare(struct host_data *hd)
+{
+	return 0;
+}
+
+static inline void host_zephyr_reset(struct host_data *hd, uint16_t state) {}
+
+static inline int host_zephyr_trigger(struct host_data *hd, struct comp_dev *dev,
+				      int cmd)
+{
+	return 0;
+}
+
+static inline int host_zephyr_params(struct host_data *hd, struct comp_dev *dev,
+				     struct sof_ipc_stream_params *params)
+{
+	return 0;
+}
+
+static inline int host_zephyr_copy(struct host_data *hd, struct comp_dev *dev)
+{
+	return 0;
+}
+
+static inline void host_update_position(struct host_data *hd,
+					struct comp_dev *dev, uint32_t bytes) {}
+
+static inline void host_one_shot_cb(struct host_data *hd, uint32_t bytes) {}
+
+#endif
 #endif /* __SOF_HOST_COPIER_H__ */

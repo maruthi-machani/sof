@@ -32,16 +32,8 @@ LOG_MODULE_DECLARE(ll_schedule, CONFIG_SOF_LOG_LEVEL);
 #define interrupt_disable mux_interrupt_disable
 #endif
 
-#ifdef CONFIG_ARM64
-#define interrupt_clear_mask(irq, bit)
-#endif /* CONFIG_ARM64 */
-
+#define SEM_LIMIT 1
 #define ZEPHYR_PDOMAIN_STACK_SIZE 8192
-
-/* sanity check - make sure CONFIG_DMA_DOMAIN_SEM_LIMIT is not some
- * garbage value.
- */
-BUILD_ASSERT(CONFIG_DMA_DOMAIN_SEM_LIMIT > 0, "Invalid DMA domain SEM_LIMIT");
 
 K_KERNEL_STACK_ARRAY_DEFINE(zephyr_dma_domain_stack,
 			    CONFIG_CORE_COUNT,
@@ -79,7 +71,7 @@ static int zephyr_dma_domain_unregister(struct ll_schedule_domain *domain,
 					struct task *task,
 					uint32_t num_tasks);
 static void zephyr_dma_domain_task_cancel(struct ll_schedule_domain *domain,
-					  struct task *task);
+					  uint32_t num_tasks);
 
 static const struct ll_schedule_domain_ops zephyr_dma_domain_ops = {
 	.domain_register	= zephyr_dma_domain_register,
@@ -182,6 +174,18 @@ static int register_dma_irq(struct zephyr_dma_domain *domain,
 	struct zephyr_dma_domain_data *crt_data;
 	int i, j, irq, ret;
 
+	/* register the DMA IRQ only for PPL tasks marked as "registrable"
+	 *
+	 * this is done because, in case of mixer topologies there's
+	 * multiple PPLs having the same scheduling component so there's
+	 * no need to go through this function for all of those PPL
+	 * tasks - only the PPL task containing the scheduling component
+	 * will do the registering
+	 *
+	 */
+	if (!pipe_task->registrable)
+		return 0;
+
 	/* iterate through all available channels in order to find a
 	 * suitable channel for which the DMA IRQs will be enabled.
 	 */
@@ -261,16 +265,6 @@ static int zephyr_dma_domain_register(struct ll_schedule_domain *domain,
 
 	tr_info(&ll_tr, "zephyr_dma_domain_register()");
 
-	/* don't even bother trying to register DMA IRQ for
-	 * non-registrable tasks.
-	 *
-	 * this is needed because zephyr_dma_domain_register() will
-	 * return -EINVAL for non-registrable tasks because of
-	 * register_dma_irq() which is not right.
-	 */
-	if (!pipe_task->registrable)
-		return 0;
-
 	/* the DMA IRQ has to be registered before the Zephyr thread is
 	 * started.
 	 *
@@ -299,28 +293,11 @@ static int zephyr_dma_domain_register(struct ll_schedule_domain *domain,
 	dt->arg = arg;
 
 	/* prepare work semaphore */
-	k_sem_init(&dt->sem, 0, CONFIG_DMA_DOMAIN_SEM_LIMIT);
+	k_sem_init(&dt->sem, 0, SEM_LIMIT);
 
 	thread_name[sizeof(thread_name) - 2] = '0' + core;
 
 	/* create Zephyr thread */
-	/* VERY IMPORTANT: DMA domain's priority needs to be
-	 * in the cooperative range to avoid scenarios such
-	 * as the following:
-	 *
-	 *	1) pipeline_copy() is in the middle of a pipeline
-	 *	graph traversal marking buffer->walking as true.
-	 *	2) IPC TRIGGER STOP comes and since edf thread
-	 *	has a higher priority it will preempt the DMA domain
-	 *	thread.
-	 *	3) When TRIGGER STOP handler does a pipeline graph
-	 *	traversal it will find some buffers with walking = true
-	 *	and not go through all the components in the pipeline.
-	 *	4) TRIGGER RESET comes and the components are not
-	 *	stopped so the handler will try to stop them which
-	 *	results in DMA IRQs being stopped and the pipeline tasks
-	 *	being stuck in the scheduling queue.
-	 */
 	thread = k_thread_create(&dt->ll_thread,
 				 zephyr_dma_domain_stack[core],
 				 ZEPHYR_PDOMAIN_STACK_SIZE,
@@ -328,7 +305,7 @@ static int zephyr_dma_domain_register(struct ll_schedule_domain *domain,
 				 dt,
 				 NULL,
 				 NULL,
-				 -CONFIG_NUM_COOP_PRIORITIES,
+				 CONFIG_NUM_PREEMPT_PRIORITIES - 1,
 				 0,
 				 K_FOREVER);
 
@@ -388,6 +365,17 @@ static int unregister_dma_irq(struct zephyr_dma_domain *domain,
 	struct zephyr_dma_domain_data *crt_data;
 	struct dma *crt_dma;
 	int i, j;
+	/* unregister the DMA IRQ only for PPL tasks marked as "registrable"
+	 *
+	 * this is done because, in case of mixer topologies there's
+	 * multiple PPLs having the same scheduling component so there's
+	 * no need to go through this function for all of those PPL
+	 * tasks - only the PPL task containing the scheduling component
+	 * will do the unregistering
+	 *
+	 */
+	if (!pipe_task->registrable)
+		return 0;
 
 	for (i = 0; i < domain->num_dma; i++) {
 		crt_dma = domain->dma_array + i;
@@ -438,18 +426,6 @@ static int zephyr_dma_domain_unregister(struct ll_schedule_domain *domain,
 
 	tr_info(&ll_tr, "zephyr_dma_domain_unregister()");
 
-	/* unregister the DMA IRQ only for PPL tasks marked as "registrable"
-	 *
-	 * this is done because, in case of mixer topologies there's
-	 * multiple PPLs having the same scheduling component so there's
-	 * no need to go through this function for all of those PPL
-	 * tasks - only the PPL task containing the scheduling component
-	 * will do the unregistering
-	 *
-	 */
-	if (!pipe_task->registrable)
-		return 0;
-
 	ret = unregister_dma_irq(zephyr_dma_domain, pipe_task, core);
 	if (ret < 0) {
 		tr_err(&ll_tr, "failed to unregister DMA IRQ for pipe task %p on core %d",
@@ -464,29 +440,20 @@ static int zephyr_dma_domain_unregister(struct ll_schedule_domain *domain,
 }
 
 static void zephyr_dma_domain_task_cancel(struct ll_schedule_domain *domain,
-					  struct task *task)
+					  uint32_t num_tasks)
 {
 	struct zephyr_dma_domain *zephyr_dma_domain;
 	struct zephyr_dma_domain_thread *dt;
-	struct pipeline_task *pipe_task;
 	int core;
 
 	zephyr_dma_domain = ll_sch_get_pdata(domain);
 	core = cpu_get_id();
 	dt = zephyr_dma_domain->domain_thread + core;
-	pipe_task = pipeline_task_get(task);
 
-	if (pipe_task->sched_comp->state != COMP_STATE_ACTIVE) {
-		/* If the state of the scheduling component
-		 * corresponding to a pipeline task is !=
-		 * COMP_STATE_ACTIVE then that means the DMA IRQs are
-		 * disabled. Because of this, when a task is cancelled
-		 * we need to give resources to the semaphore to make
-		 * sure that zephyr_ll_run() is still executed and the
-		 * tasks can be safely cancelled.
-		 *
-		 * This works because the state of the scheduling
-		 * component is updated before the trigger operation.
+	if (!num_tasks) {
+		/* DMA IRQs got cut off, we need to let the Zephyr
+		 * thread execute the handler one more time so as to be
+		 * able to remove the task from the task queue
 		 */
 		k_sem_give(&dt->sem);
 	}

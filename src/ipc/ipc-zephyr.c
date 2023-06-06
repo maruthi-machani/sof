@@ -176,19 +176,6 @@ int ipc_platform_send_msg(const struct ipc_msg *msg)
 	return 0;
 }
 
-void ipc_platform_send_msg_direct(const struct ipc_msg *msg)
-{
-	/* prepare the message and copy to mailbox */
-	struct ipc_cmd_hdr *hdr = ipc_prepare_to_send(msg);
-
-	intel_adsp_ipc_send_message_emergency(INTEL_ADSP_IPC_HOST_DEV, hdr->pri, hdr->ext);
-}
-
-int ipc_platform_poll_is_host_ready(void)
-{
-	return intel_adsp_ipc_is_complete(INTEL_ADSP_IPC_HOST_DEV);
-}
-
 int platform_ipc_init(struct ipc *ipc)
 {
 	ipc_set_drvdata(ipc, NULL);

@@ -344,8 +344,7 @@ static int drc_copy(struct comp_dev *dev)
 	/* Check for changed configuration */
 	if (comp_is_new_data_blob_available(cd->model_handler)) {
 		cd->config = comp_get_data_blob(cd->model_handler, NULL, NULL);
-		ret = drc_setup(cd, audio_stream_get_channels(&source_c->stream),
-				audio_stream_get_rate(&source_c->stream));
+		ret = drc_setup(cd, source_c->stream.channels, source_c->stream.rate);
 		if (ret < 0) {
 			comp_err(dev, "drc_copy(), failed DRC setup");
 			goto out;
@@ -392,15 +391,14 @@ static int drc_prepare(struct comp_dev *dev)
 	source_c = buffer_acquire(sourceb);
 
 	/* get source data format */
-	cd->source_format = audio_stream_get_frm_fmt(&source_c->stream);
+	cd->source_format = source_c->stream.frame_fmt;
 
 	/* Initialize DRC */
 	comp_info(dev, "drc_prepare(), source_format=%d, sink_format=%d",
 		  cd->source_format, cd->source_format);
 	cd->config = comp_get_data_blob(cd->model_handler, NULL, NULL);
 	if (cd->config) {
-		ret = drc_setup(cd, audio_stream_get_channels(&source_c->stream),
-				audio_stream_get_rate(&source_c->stream));
+		ret = drc_setup(cd, source_c->stream.channels, source_c->stream.rate);
 		if (ret < 0) {
 			comp_err(dev, "drc_prepare() error: drc_setup failed.");
 			goto out_source;
@@ -421,9 +419,9 @@ static int drc_prepare(struct comp_dev *dev)
 	sink_c = buffer_acquire(sinkb);
 
 	/* validate sink data format and period bytes */
-	if (cd->source_format != audio_stream_get_frm_fmt(&sink_c->stream)) {
+	if (cd->source_format != sink_c->stream.frame_fmt) {
 		comp_err(dev, "drc_prepare(): Source fmt %d and sink fmt %d are different.",
-			 cd->source_format, audio_stream_get_frm_fmt(&sink_c->stream));
+			 cd->source_format, sink_c->stream.frame_fmt);
 		ret = -EINVAL;
 		goto out_sink;
 	}
@@ -431,9 +429,9 @@ static int drc_prepare(struct comp_dev *dev)
 	sink_period_bytes = audio_stream_period_bytes(&sink_c->stream,
 						      dev->frames);
 
-	if (audio_stream_get_size(&sink_c->stream) < sink_period_bytes) {
+	if (sink_c->stream.size < sink_period_bytes) {
 		comp_err(dev, "drc_prepare(), sink buffer size %d is insufficient",
-			 audio_stream_get_size(&sink_c->stream));
+			 sink_c->stream.size);
 		ret = -ENOMEM;
 	}
 

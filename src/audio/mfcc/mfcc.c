@@ -209,19 +209,19 @@ static int mfcc_prepare(struct processing_module *mod)
 	sink_c = buffer_acquire(sinkb);
 
 	/* get source data format */
-	source_format = audio_stream_get_frm_fmt(&source_c->stream);
+	source_format = source_c->stream.frame_fmt;
 
 	/* set align requirements */
 	mfcc_set_alignment(&source_c->stream, &sink_c->stream);
 
 	/* get sink data format and period bytes */
-	sink_format = audio_stream_get_frm_fmt(&sink_c->stream);
+	sink_format = sink_c->stream.frame_fmt;
 	sink_period_bytes = audio_stream_period_bytes(&sink_c->stream, dev->frames);
 	comp_info(dev, "mfcc_prepare(), source_format = %d, sink_format = %d",
 		  source_format, sink_format);
-	if (audio_stream_get_size(&sink_c->stream) < sink_period_bytes) {
+	if (sink_c->stream.size < sink_period_bytes) {
 		comp_err(dev, "mfcc_prepare(): sink buffer size %d is insufficient < %d",
-			 audio_stream_get_size(&sink_c->stream), sink_period_bytes);
+			 sink_c->stream.size, sink_period_bytes);
 		ret = -ENOMEM;
 		goto err;
 	}
@@ -230,8 +230,8 @@ static int mfcc_prepare(struct processing_module *mod)
 
 	/* Initialize MFCC, max_frames is set to dev->frames + 4 */
 	if (cd->config) {
-		ret = mfcc_setup(mod, dev->frames + 4, audio_stream_get_rate(&source_c->stream),
-				 audio_stream_get_channels(&source_c->stream));
+		ret = mfcc_setup(mod, dev->frames + 4, source_c->stream.rate,
+				 source_c->stream.channels);
 		if (ret < 0) {
 			comp_err(dev, "mfcc_prepare(), setup failed.");
 			goto err;

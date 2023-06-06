@@ -93,7 +93,7 @@ static void mfcc_source_copy_s16(struct input_stream_buffer *bsource, struct mfc
 	struct audio_stream __sparse_cache *source = bsource->data;
 	int32_t s;
 	int16_t *x0;
-	int16_t *x = audio_stream_get_rptr(source);
+	int16_t *x = source->r_ptr;
 	int16_t *w = buf->w_ptr;
 	int copied;
 	int nmax;
@@ -101,7 +101,7 @@ static void mfcc_source_copy_s16(struct input_stream_buffer *bsource, struct mfc
 	int n2;
 	int n;
 	int i;
-	int num_channels = audio_stream_get_channels(source);
+	int num_channels = source->channels;
 
 	/* Copy from source to pre-buffer for FFT.
 	 * The pre-emphasis filter is done in this step.
@@ -126,7 +126,7 @@ static void mfcc_source_copy_s16(struct input_stream_buffer *bsource, struct mfc
 			w++;
 		}
 
-		x = audio_stream_wrap(source, x + n * audio_stream_get_channels(source));
+		x = audio_stream_wrap(source, x + n * source->channels);
 		w = mfcc_buffer_wrap(buf, w);
 	}
 	buf->s_avail += copied;
@@ -462,7 +462,7 @@ void mfcc_s16_default(struct processing_module *mod, struct input_stream_buffer 
 	struct mfcc_state *state = &cd->state;
 	struct mfcc_buffer *buf = &cd->state.buf;
 	uint32_t magic = MFCC_MAGIC;
-	int16_t *w_ptr = audio_stream_get_wptr(sink);
+	int16_t *w_ptr = sink->w_ptr;
 	int num_magic = sizeof(magic) / sizeof(int16_t);
 	int num_ceps;
 	int zero_samples;
@@ -478,7 +478,7 @@ void mfcc_s16_default(struct processing_module *mod, struct input_stream_buffer 
 	/* Done, copy data to sink. This works only if the period has room for magic (2)
 	 * plus num_ceps int16_t samples. TODO: split ceps over multiple periods.
 	 */
-	zero_samples = frames * audio_stream_get_channels(sink);
+	zero_samples = frames * sink->channels;
 	if (num_ceps > 0) {
 		zero_samples -= num_ceps + num_magic;
 		w_ptr = mfcc_sink_copy_data_s16(sink, w_ptr, num_magic, (int16_t *)&magic);

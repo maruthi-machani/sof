@@ -238,11 +238,7 @@ static enum task_state chain_task_run(void *data)
 		 * mode task will update read position based on transferred data size to avoid
 		 * overwriting valid data and write position by half buffer size.
 		 */
-		struct comp_buffer __sparse_cache *buffer_c = buffer_acquire(cd->dma_buffer);
-		const size_t buff_size = audio_stream_get_size(&buffer_c->stream);
-		const size_t half_buff_size = buff_size / 2;
-
-		buffer_release(buffer_c);
+		const size_t half_buff_size = cd->dma_buffer->stream.size / 2;
 
 		if (!cd->first_data_received && host_avail_bytes > half_buff_size) {
 			ret = dma_reload(cd->chan_link->dma->z_dev,
@@ -260,7 +256,7 @@ static enum task_state chain_task_run(void *data)
 			const size_t transferred =
 				chain_get_transferred_data_size(link_read_pos,
 								host_read_pos,
-								buff_size);
+								cd->dma_buffer->stream.size);
 
 			ret = dma_reload(cd->chan_host->dma->z_dev, cd->chan_host->index,
 					 0, 0, transferred);
@@ -589,7 +585,7 @@ static int chain_task_init(struct comp_dev *dev, uint8_t host_dma_id, uint8_t li
 
 	fifo_size = ALIGN_UP_INTERNAL(fifo_size, addr_align);
 
-	cd->dma_buffer = buffer_alloc(fifo_size, SOF_MEM_CAPS_DMA, 0, addr_align);
+	cd->dma_buffer = buffer_alloc(fifo_size, SOF_MEM_CAPS_DMA, addr_align);
 
 	if (!cd->dma_buffer) {
 		comp_err(dev, "chain_task_init(): failed to alloc dma buffer");
@@ -600,8 +596,8 @@ static int chain_task_init(struct comp_dev *dev, uint8_t host_dma_id, uint8_t li
 	/* clear dma buffer */
 	buffer_c = buffer_acquire(cd->dma_buffer);
 	buffer_zero(buffer_c);
-	buff_addr = audio_stream_get_addr(&buffer_c->stream);
-	buff_size = audio_stream_get_size(&buffer_c->stream);
+	buff_addr = cd->dma_buffer->stream.addr;
+	buff_size = cd->dma_buffer->stream.size;
 	buffer_release(buffer_c);
 
 	ret = chain_init(dev, buff_addr, buff_size);

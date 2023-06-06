@@ -11,9 +11,9 @@
 #ifdef MIXIN_MIXOUT_GENERIC
 
 #if CONFIG_FORMAT_S16LE
-/* Instead of using audio_stream_get_channels(sink) and audio_stream_get_channels(source),
- * sink_channel_count and source_channel_count are supplied as parameters. This is done to reuse
- * the function to also mix an entire stream. In this case the function is called with fake stream
+/* Instead of using sink->channels and source->channels, sink_channel_count and
+ * source_channel_count are supplied as parameters. This is done to reuse the function
+ * to also mix an entire stream. In this case the function is called with fake stream
  * parameters: multichannel stream is treated as single channel and so the entire stream
  * contents is mixed.
  */
@@ -26,8 +26,8 @@ static void normal_mix_channel_s16(struct audio_stream __sparse_cache *sink, int
 	int32_t n, nmax, i;
 
 	/* audio_stream_wrap() is required and is done below in a loop */
-	int16_t *dst = (int16_t *)audio_stream_get_wptr(sink) + start_frame;
-	int16_t *src = audio_stream_get_rptr(source);
+	int16_t *dst = (int16_t *)sink->w_ptr + start_frame;
+	int16_t *src = (int16_t *)source->r_ptr;
 
 	assert(mixed_frames >= start_frame);
 	frames_to_mix = mixed_frames - start_frame;
@@ -56,8 +56,6 @@ static void normal_mix_channel_s16(struct audio_stream __sparse_cache *sink, int
 		nmax = audio_stream_samples_without_wrap_s16(sink, dst);
 		n = MIN(n, nmax);
 		memcpy_s(dst, n * sizeof(int16_t), src, n * sizeof(int16_t));
-		dst += n;
-		src += n;
 	}
 }
 
@@ -73,9 +71,8 @@ static void remap_mix_channel_s16(struct audio_stream __sparse_cache *sink,
 	int32_t n, nmax, frames, i, samples;
 
 	/* audio_stream_wrap() is required and is done below in a loop */
-	dst = (int16_t *)audio_stream_get_wptr(sink) + start_frame * sink_channel_count +
-		sink_channel_index;
-	src = (int16_t *)audio_stream_get_rptr(source) + source_channel_index;
+	dst = (int16_t *)sink->w_ptr + start_frame * sink_channel_count + sink_channel_index;
+	src = (int16_t *)source->r_ptr + source_channel_index;
 
 	assert(mixed_frames >= start_frame);
 	frames_to_mix = mixed_frames - start_frame;
@@ -132,11 +129,9 @@ static void mute_channel_s16(struct audio_stream __sparse_cache *stream, int32_t
 	if (frame_count <= skip_mixed_frames)
 		return;
 	frame_count -= skip_mixed_frames;
-	channel_count = audio_stream_get_channels(stream);
+	channel_count = stream->channels;
 	/* audio_stream_wrap() is needed here and it is just below in a loop */
-	ptr = (int16_t *)audio_stream_get_wptr(stream) +
-		mixed_frames * audio_stream_get_channels(stream) +
-		channel_index;
+	ptr = (int16_t *)stream->w_ptr + mixed_frames * stream->channels + channel_index;
 
 	for (left_frames = frame_count; left_frames; left_frames -= frames) {
 		ptr = audio_stream_wrap(stream, ptr);
@@ -154,9 +149,9 @@ static void mute_channel_s16(struct audio_stream __sparse_cache *stream, int32_t
 #endif	/* CONFIG_FORMAT_S16LE */
 
 #if CONFIG_FORMAT_S24LE
-/* Instead of using audio_stream_get_channels(sink) and audio_stream_get_channels(source),
- * sink_channel_count and source_channel_count are supplied as parameters. This is done to reuse
- * the function to also mix an entire stream. In this case the function is called with fake stream
+/* Instead of using sink->channels and source->channels, sink_channel_count and
+ * source_channel_count are supplied as parameters. This is done to reuse the function
+ * to also mix an entire stream. In this case the function is called with fake stream
  * parameters: multichannel stream is treated as single channel and so the entire stream
  * contents is mixed.
  */
@@ -168,8 +163,8 @@ static void normal_mix_channel_s24(struct audio_stream __sparse_cache *sink, int
 	int32_t frames_to_mix, frames_to_copy, left_frames;
 	int32_t n, nmax, i;
 	/* audio_stream_wrap() is required and is done below in a loop */
-	int32_t *dst = (int32_t *)audio_stream_get_wptr(sink) + start_frame;
-	int32_t *src = audio_stream_get_rptr(source);
+	int32_t *dst = (int32_t *)sink->w_ptr + start_frame;
+	int32_t *src = (int32_t *)source->r_ptr;
 
 	assert(mixed_frames >= start_frame);
 	frames_to_mix = mixed_frames - start_frame;
@@ -198,8 +193,6 @@ static void normal_mix_channel_s24(struct audio_stream __sparse_cache *sink, int
 		nmax = audio_stream_samples_without_wrap_s24(sink, dst);
 		n = MIN(n, nmax);
 		memcpy_s(dst, n * sizeof(int32_t), src, n * sizeof(int32_t));
-		dst += n;
-		src += n;
 	}
 }
 
@@ -215,9 +208,8 @@ static void remap_mix_channel_s24(struct audio_stream __sparse_cache *sink,
 	int32_t n, nmax, i, frames, samples;
 
 	/* audio_stream_wrap() is required and is done below in a loop */
-	dst = (int32_t *)audio_stream_get_wptr(sink) + start_frame * sink_channel_count +
-		sink_channel_index;
-	src = (int32_t *)audio_stream_get_rptr(source) + source_channel_index;
+	dst = (int32_t *)sink->w_ptr + start_frame * sink_channel_count + sink_channel_index;
+	src = (int32_t *)source->r_ptr + source_channel_index;
 
 	assert(mixed_frames >= start_frame);
 	frames_to_mix = mixed_frames - start_frame;
@@ -267,9 +259,9 @@ static void remap_mix_channel_s24(struct audio_stream __sparse_cache *sink,
 #endif	/* CONFIG_FORMAT_S24LE */
 
 #if CONFIG_FORMAT_S32LE
-/* Instead of using audio_stream_get_channels(sink) and audio_stream_get_channels(source),
- * sink_channel_count and source_channel_count are supplied as parameters. This is done to reuse
- * the function to also mix an entire stream. In this case the function is called with fake stream
+/* Instead of using sink->channels and source->channels, sink_channel_count and
+ * source_channel_count are supplied as parameters. This is done to reuse the function
+ * to also mix an entire stream. In this case the function is called with fake stream
  * parameters: multichannel stream is treated as single channel and so the entire stream
  * contents is mixed.
  */
@@ -280,8 +272,8 @@ static void normal_mix_channel_s32(struct audio_stream __sparse_cache *sink, int
 {
 	int32_t frames_to_mix, frames_to_copy, left_frames;
 	int32_t n, nmax, i;
-	int32_t *dst = (int32_t *)audio_stream_get_wptr(sink) + start_frame;
-	int32_t *src = audio_stream_get_rptr(source);
+	int32_t *dst = (int32_t *)sink->w_ptr + start_frame;
+	int32_t *src = (int32_t *)source->r_ptr;
 
 	assert(mixed_frames >= start_frame);
 	frames_to_mix = mixed_frames - start_frame;
@@ -310,8 +302,6 @@ static void normal_mix_channel_s32(struct audio_stream __sparse_cache *sink, int
 		nmax = audio_stream_samples_without_wrap_s32(sink, dst);
 		n = MIN(n, nmax);
 		memcpy_s(dst, n * sizeof(int32_t), src, n * sizeof(int32_t));
-		dst += n;
-		src += n;
 	}
 }
 
@@ -327,9 +317,8 @@ static void remap_mix_channel_s32(struct audio_stream __sparse_cache *sink,
 	int32_t *dst, *src;
 
 	/* audio_stream_wrap() is required and is done below in a loop */
-	dst = (int32_t *)audio_stream_get_wptr(sink) + start_frame * sink_channel_count +
-		sink_channel_index;
-	src = (int32_t *)audio_stream_get_rptr(source) + source_channel_index;
+	dst = (int32_t *)sink->w_ptr + start_frame * sink_channel_count + sink_channel_index;
+	src = (int32_t *)source->r_ptr + source_channel_index;
 
 	assert(mixed_frames >= start_frame);
 	frames_to_mix = mixed_frames - start_frame;
@@ -389,11 +378,9 @@ static void mute_channel_s32(struct audio_stream __sparse_cache *stream, int32_t
 	if (frame_count <= skip_mixed_frames)
 		return;
 	frame_count -= skip_mixed_frames;
-	channel_count = audio_stream_get_channels(stream);
+	channel_count = stream->channels;
 
-	ptr = (int32_t *)audio_stream_get_wptr(stream) +
-		mixed_frames * audio_stream_get_channels(stream) +
-		channel_index;
+	ptr = (int32_t *)stream->w_ptr + mixed_frames * stream->channels + channel_index;
 
 	for (left_frames = frame_count; left_frames > 0; left_frames -= frames) {
 		ptr = audio_stream_wrap(stream, ptr);

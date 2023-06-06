@@ -19,5 +19,4 @@ cmocka_test(fft
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-xrun.c
 	${PROJECT_SOURCE_DIR}/test/cmocka/src/common_mocks.c
 	${PROJECT_SOURCE_DIR}/src/audio/component.c
-	${PROJECT_SOURCE_DIR}/src/math/numbers.c
 )

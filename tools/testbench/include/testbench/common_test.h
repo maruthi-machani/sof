@@ -36,7 +36,6 @@ struct tplg_context;
  * into per pipeline data and per topology data structures.
  */
 struct testbench_prm {
-	long long total_cycles;
 	char *tplg_file; /* topology file to use */
 	char *input_file[MAX_INPUT_FILE_NUM]; /* input file names */
 	char *output_file[MAX_OUTPUT_FILE_NUM]; /* output file names */
@@ -45,7 +44,6 @@ struct testbench_prm {
 	char *bits_in; /* input bit format */
 	int pipelines[MAX_OUTPUT_FILE_NUM]; /* output file names */
 	int pipeline_num;
-	struct tplg_context *ctx;
 
 	int fr_id;
 	int fw_id;
@@ -64,26 +62,26 @@ struct testbench_prm {
 	int output_file_index;
 	int input_file_index;
 
-	struct tplg_comp_info *info;
-	int info_index;
-	int info_elems;
-
-	/*
-	 * input and output sample rate parameters
-	 * By default, these are calculated from pipeline frames_per_sched
-	 * and period but they can also be overridden via input arguments
-	 * to the testbench.
-	 */
-	uint32_t fs_in;
-	uint32_t fs_out;
-	uint32_t channels_in;
-	uint32_t channels_out;
-	enum sof_ipc_frame frame_fmt;
+	/* global cmd line args that can override topology */
+	enum sof_ipc_frame cmd_frame_fmt;
+	uint32_t cmd_fs_in;
+	uint32_t cmd_fs_out;
+	uint32_t cmd_channels_in;
+	uint32_t cmd_channels_out;
 };
 
-extern int debug;
+struct shared_lib_table {
+	char *comp_name;
+	char library_name[MAX_LIB_NAME_LEN];
+	uint32_t widget_type;
+	struct sof_uuid *uid;
+	int register_drv;
+	void *handle;
+};
 
-int tb_parse_topology(struct testbench_prm *tb, struct tplg_context *ctx);
+extern struct shared_lib_table lib_table[];
+
+extern int debug;
 
 int edf_scheduler_init(void);
 
@@ -96,7 +94,7 @@ void tb_free(struct sof *sof);
 
 int tb_pipeline_start(struct ipc *ipc, struct pipeline *p);
 
-int tb_pipeline_params(struct testbench_prm *tp, struct ipc *ipc, struct pipeline *p,
+int tb_pipeline_params(struct ipc *ipc, struct pipeline *p,
 		       struct tplg_context *ctx);
 
 int tb_pipeline_stop(struct ipc *ipc, struct pipeline *p);
@@ -105,8 +103,12 @@ int tb_pipeline_reset(struct ipc *ipc, struct pipeline *p);
 
 void debug_print(char *message);
 
-void tb_gettime(struct timespec *td);
+int get_index_by_name(char *comp_name,
+		      struct shared_lib_table *lib_table);
 
-void tb_getcycles(uint64_t *cycles);
+int get_index_by_type(uint32_t comp_type,
+		      struct shared_lib_table *lib_table);
 
+int get_index_by_uuid(struct sof_ipc_comp_ext *comp_ext,
+		      struct shared_lib_table *lib_table);
 #endif

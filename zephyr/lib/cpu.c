@@ -15,6 +15,7 @@
 #include <sof/lib/pm_runtime.h>
 
 /* Zephyr includes */
+#include <soc.h>
 #include <version.h>
 #include <zephyr/kernel.h>
 
@@ -59,25 +60,11 @@ static FUNC_NORETURN void secondary_init(void *arg)
 #if CONFIG_ZEPHYR_NATIVE_DRIVERS
 #include <sof/trace/trace.h>
 #include <rtos/wait.h>
+#include <zephyr/pm/pm.h>
 
 LOG_MODULE_DECLARE(zephyr, CONFIG_SOF_LOG_LEVEL);
 
 extern struct tr_ctx zephyr_tr;
-
-/* notifier called after every power state transition */
-void cpu_notify_state_exit(enum pm_state state)
-{
-	if (state == PM_STATE_SOFT_OFF)	{
-#if CONFIG_MULTICORE
-		if (!cpu_is_primary(arch_proc_id())) {
-			/* Notifying primary core that secondary core successfully exit the D3
-			 * state and is back in the Idle thread.
-			 */
-			atomic_set(&ready_flag, 1);
-		}
-#endif
-	}
-}
 
 int cpu_enable_core(int id)
 {
@@ -93,13 +80,7 @@ int cpu_enable_core(int id)
 		return 0;
 
 #if ZEPHYR_VERSION(3, 0, 99) <= ZEPHYR_VERSION_CODE
-	/* During kernel initialization, the next pm state is set to ACTIVE. By checking this
-	 * value, we determine if this is the first core boot, if not, we need to skip idle thread
-	 * initialization. By reinitializing the idle thread, we would overwrite the kernel structs
-	 * and the idle thread stack.
-	 */
-	if (pm_state_next_get(id)->state == PM_STATE_ACTIVE)
-		z_init_cpu(id);
+	z_init_cpu(id);
 #endif
 
 	atomic_clear(&start_flag);

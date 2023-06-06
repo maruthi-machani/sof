@@ -11,16 +11,10 @@
 #include <sof/lib/cpu-clk-manager.h>
 #include <sof/lib/cpu.h>
 #include <rtos/init.h>
-#include <platform/lib/clk.h>
 
 #if CONFIG_ACE_V1X_ART_COUNTER || CONFIG_ACE_V1X_RTC_COUNTER
 #include <zephyr/device.h>
 #include <zephyr/drivers/counter.h>
-#endif
-
-/* TODO: Remove platform-specific code, see https://github.com/thesofproject/sof/issues/7549 */
-#if defined(CONFIG_SOC_SERIES_INTEL_ACE) || defined(CONFIG_INTEL_ADSP_CAVS)
-# define INTEL_ADSP 1
 #endif
 
 LOG_MODULE_REGISTER(basefw, CONFIG_SOF_LOG_LEVEL);
@@ -202,13 +196,8 @@ static int basefw_mem_state_info(uint32_t *data_offset, char *data)
 	index = 0;
 	tuple_data[index++] = info.free_phys_mem_pages;
 	tuple_data[index++] = info.ebb_state_dword_count;
-	for (i = 0; i < info.ebb_state_dword_count; i++) {
-#ifdef INTEL_ADSP
+	for (i = 0; i < info.ebb_state_dword_count; i++)
 		tuple_data[index + i] = io_reg_read(SHIM_HSPGCTL(i));
-#else
-		tuple_data[index + i] = 0;
-#endif
-	}
 	index += info.ebb_state_dword_count;
 
 	tuple_data[index++] = info.page_alloc_struct.page_alloc_count;
@@ -232,11 +221,7 @@ static int basefw_mem_state_info(uint32_t *data_offset, char *data)
 	index = 0;
 	tuple_data[index++] = info.free_phys_mem_pages;
 	tuple_data[index++] = info.ebb_state_dword_count;
-#ifdef INTEL_ADSP
 	tuple_data[index++] = io_reg_read(LSPGCTL);
-#else
-	tuple_data[index++] = 0;
-#endif
 	tuple_data[index++] = info.page_alloc_struct.page_alloc_count;
 	ptr = (uint16_t *)(tuple_data + index);
 	for (i = 0; i < info.page_alloc_struct.page_alloc_count; i++)

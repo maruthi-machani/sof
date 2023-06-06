@@ -27,7 +27,7 @@ DECLARE_SOF_RT_UUID("buffer", buffer_uuid, 0x42544c92, 0x8e92, 0x4e41,
 		 0xb6, 0x79, 0x34, 0x51, 0x9f, 0x1c, 0x1d, 0x28);
 DECLARE_TR_CTX(buffer_tr, SOF_UUID(buffer_uuid), LOG_LEVEL_INFO);
 
-struct comp_buffer *buffer_alloc(uint32_t size, uint32_t caps, uint32_t flags, uint32_t align)
+struct comp_buffer *buffer_alloc(uint32_t size, uint32_t caps, uint32_t align)
 {
 	struct comp_buffer *buffer;
 	struct comp_buffer __sparse_cache *buffer_c;
@@ -59,9 +59,6 @@ struct comp_buffer *buffer_alloc(uint32_t size, uint32_t caps, uint32_t flags, u
 		return NULL;
 	}
 
-	buffer->stream.underrun_permitted = !!(flags & SOF_BUF_UNDERRUN_PERMITTED);
-	buffer->stream.overrun_permitted = !!(flags & SOF_BUF_OVERRUN_PERMITTED);
-
 	list_init(&buffer->source_list);
 	list_init(&buffer->sink_list);
 
@@ -89,14 +86,13 @@ void buffer_zero(struct comp_buffer __sparse_cache *buffer)
 {
 	buf_dbg(buffer, "stream_zero()");
 
-	bzero(audio_stream_get_addr(&buffer->stream), audio_stream_get_size(&buffer->stream));
+	bzero(buffer->stream.addr, buffer->stream.size);
 	if (buffer->caps & SOF_MEM_CAPS_DMA)
-		dcache_writeback_region((__sparse_force void __sparse_cache *)
-					audio_stream_get_addr(&buffer->stream),
-					audio_stream_get_size(&buffer->stream));
+		dcache_writeback_region((__sparse_force void __sparse_cache *)buffer->stream.addr,
+					buffer->stream.size);
 }
 
-int buffer_set_size(struct comp_buffer __sparse_cache *buffer, uint32_t size, uint32_t alignment)
+int buffer_set_size(struct comp_buffer __sparse_cache *buffer, uint32_t size)
 {
 	void *new_ptr = NULL;
 
@@ -106,20 +102,16 @@ int buffer_set_size(struct comp_buffer __sparse_cache *buffer, uint32_t size, ui
 		return -EINVAL;
 	}
 
-	if (size == audio_stream_get_size(&buffer->stream))
+	if (size == buffer->stream.size)
 		return 0;
 
-	if (!alignment)
-		new_ptr = rbrealloc(audio_stream_get_addr(&buffer->stream), SOF_MEM_FLAG_NO_COPY,
-				    buffer->caps, size, audio_stream_get_size(&buffer->stream));
-	else
-		new_ptr = rbrealloc_align(audio_stream_get_addr(&buffer->stream),
-					  SOF_MEM_FLAG_NO_COPY, buffer->caps, size,
-					  audio_stream_get_size(&buffer->stream), alignment);
+	new_ptr = rbrealloc(buffer->stream.addr, SOF_MEM_FLAG_NO_COPY,
+			    buffer->caps, size, buffer->stream.size);
+
 	/* we couldn't allocate bigger chunk */
-	if (!new_ptr && size > audio_stream_get_size(&buffer->stream)) {
+	if (!new_ptr && size > buffer->stream.size) {
 		buf_err(buffer, "resize can't alloc %u bytes type %u",
-			audio_stream_get_size(&buffer->stream), buffer->caps);
+			buffer->stream.size, buffer->caps);
 		return -ENOMEM;
 	}
 
@@ -220,7 +212,7 @@ void comp_update_buffer_produce(struct comp_buffer __sparse_cache *buffer, uint3
 	struct buffer_cb_transact cb_data = {
 		.buffer = buffer,
 		.transaction_amount = bytes,
-		.transaction_begin_address = audio_stream_get_wptr(&buffer->stream),
+		.transaction_begin_address = buffer->stream.w_ptr,
 	};
 
 	/* return if no bytes */
@@ -242,12 +234,10 @@ void comp_update_buffer_produce(struct comp_buffer __sparse_cache *buffer, uint3
 	buf_dbg(buffer, "comp_update_buffer_produce(), ((buffer->avail << 16) | buffer->free) = %08x, ((buffer->id << 16) | buffer->size) = %08x",
 		(audio_stream_get_avail_bytes(&buffer->stream) << 16) |
 		 audio_stream_get_free_bytes(&buffer->stream),
-		(buffer->id << 16) | audio_stream_get_size(&buffer->stream));
+		(buffer->id << 16) | buffer->stream.size);
 	buf_dbg(buffer, "comp_update_buffer_produce(), ((buffer->r_ptr - buffer->addr) << 16 | (buffer->w_ptr - buffer->addr)) = %08x",
-		((char *)audio_stream_get_rptr(&buffer->stream) -
-		 (char *)audio_stream_get_addr(&buffer->stream)) << 16 |
-		((char *)audio_stream_get_wptr(&buffer->stream) -
-		 (char *)audio_stream_get_addr(&buffer->stream)));
+		((char *)buffer->stream.r_ptr - (char *)buffer->stream.addr) << 16 |
+		((char *)buffer->stream.w_ptr - (char *)buffer->stream.addr));
 }
 
 void comp_update_buffer_consume(struct comp_buffer __sparse_cache *buffer, uint32_t bytes)
@@ -255,7 +245,7 @@ void comp_update_buffer_consume(struct comp_buffer __sparse_cache *buffer, uint3
 	struct buffer_cb_transact cb_data = {
 		.buffer = buffer,
 		.transaction_amount = bytes,
-		.transaction_begin_address = audio_stream_get_rptr(&buffer->stream),
+		.transaction_begin_address = buffer->stream.r_ptr,
 	};
 
 	/* return if no bytes */
@@ -276,11 +266,9 @@ void comp_update_buffer_consume(struct comp_buffer __sparse_cache *buffer, uint3
 	buf_dbg(buffer, "comp_update_buffer_consume(), (buffer->avail << 16) | buffer->free = %08x, (buffer->id << 16) | buffer->size = %08x, (buffer->r_ptr - buffer->addr) << 16 | (buffer->w_ptr - buffer->addr)) = %08x",
 		(audio_stream_get_avail_bytes(&buffer->stream) << 16) |
 		 audio_stream_get_free_bytes(&buffer->stream),
-		(buffer->id << 16) | audio_stream_get_size(&buffer->stream),
-		((char *)audio_stream_get_rptr(&buffer->stream) -
-		 (char *)audio_stream_get_addr(&buffer->stream)) << 16 |
-		((char *)audio_stream_get_wptr(&buffer->stream) -
-		 (char *)audio_stream_get_addr(&buffer->stream)));
+		(buffer->id << 16) | buffer->stream.size,
+		((char *)buffer->stream.r_ptr - (char *)buffer->stream.addr) << 16 |
+		((char *)buffer->stream.w_ptr - (char *)buffer->stream.addr));
 }
 
 void buffer_attach(struct comp_buffer *buffer, struct list_item *head, int dir)

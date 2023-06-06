@@ -587,12 +587,12 @@ static int smart_amp_get_buffer(int32_t *buf, uint32_t frames,
 	union smart_amp_buf input, output;
 	int index;
 
-	input.buf16 = audio_stream_get_rptr(stream);
-	input.buf32 = audio_stream_get_rptr(stream);
+	input.buf16 = (int16_t *)stream->r_ptr;
+	input.buf32 = (int32_t *)stream->r_ptr;
 	output.buf16 = (int16_t *)buf;
 	output.buf32 = (int32_t *)buf;
 
-	switch (audio_stream_get_frm_fmt(stream)) {
+	switch (stream->frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
 		for (idx = 0 ; idx < frames ; idx++) {
 			for (ch = 0 ; ch < num_ch; ch++) {
@@ -604,7 +604,7 @@ static int smart_amp_get_buffer(int32_t *buf, uint32_t frames,
 								   index);
 				output.buf16[num_ch * idx + ch] = *input.buf16;
 			}
-			in_frag += audio_stream_get_channels(stream);
+			in_frag += stream->channels;
 		}
 		break;
 	case SOF_IPC_FRAME_S24_4LE:
@@ -619,7 +619,7 @@ static int smart_amp_get_buffer(int32_t *buf, uint32_t frames,
 								   index);
 				output.buf32[num_ch * idx + ch] = *input.buf32;
 			}
-			in_frag += audio_stream_get_channels(stream);
+			in_frag += stream->channels;
 		}
 		break;
 	default:
@@ -639,10 +639,10 @@ static int smart_amp_put_buffer(int32_t *buf, uint32_t frames,
 
 	input.buf16 = (int16_t *)buf;
 	input.buf32 = (int32_t *)buf;
-	output.buf16 = audio_stream_get_wptr(stream);
-	output.buf32 = audio_stream_get_wptr(stream);
+	output.buf16 = (int16_t *)stream->w_ptr;
+	output.buf32 = (int32_t *)stream->w_ptr;
 
-	switch (audio_stream_get_frm_fmt(stream)) {
+	switch (stream->frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
 		for (idx = 0 ; idx < frames ; idx++) {
 			for (ch = 0 ; ch < num_ch_out; ch++) {
@@ -708,7 +708,7 @@ int smart_amp_ff_copy(struct comp_dev *dev, uint32_t frames,
 	if (ret)
 		goto err;
 
-	switch (audio_stream_get_frm_fmt(source)) {
+	switch (source->frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
 		maxim_dsm_ff_proc(hspk, dev,
 				  hspk->buf.frame_in,
@@ -767,7 +767,7 @@ int smart_amp_fb_copy(struct comp_dev *dev, uint32_t frames,
 	if (ret)
 		goto err;
 
-	switch (audio_stream_get_frm_fmt(source)) {
+	switch (source->frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
 		maxim_dsm_fb_proc(hspk, dev, hspk->buf.frame_iv,
 				  frames * num_ch, sizeof(int16_t));
@@ -784,6 +784,6 @@ int smart_amp_fb_copy(struct comp_dev *dev, uint32_t frames,
 	return 0;
 err:
 	comp_err(dev, "[DSM] Not supported frame format : %d",
-		 audio_stream_get_frm_fmt(source));
+		 source->frame_fmt);
 	return ret;
 }

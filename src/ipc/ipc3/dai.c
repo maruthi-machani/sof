@@ -29,13 +29,9 @@
 
 LOG_MODULE_DECLARE(ipc, CONFIG_SOF_LOG_LEVEL);
 
-void dai_set_link_hda_config(uint16_t *link_config,
-			    struct ipc_config_dai *common_config,
-			    const void *spec_config)
-{ }
-
-int dai_config_dma_channel(struct dai_data *dd, struct comp_dev *dev, const void *spec_config)
+int dai_config_dma_channel(struct comp_dev *dev, const void *spec_config)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	const struct sof_ipc_dai_config *config = spec_config;
 	struct ipc_config_dai *dai = &dd->ipc_config;
 	int channel;
@@ -99,8 +95,9 @@ int dai_config_dma_channel(struct dai_data *dd, struct comp_dev *dev, const void
 	return channel;
 }
 
-int ipc_dai_data_config(struct dai_data *dd, struct comp_dev *dev)
+int ipc_dai_data_config(struct comp_dev *dev)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
 	struct ipc_config_dai *dai = &dd->ipc_config;
 	struct sof_ipc_dai_config *config = ipc_from_dai_config(dd->dai_spec_config);
 	struct comp_buffer __sparse_cache *buffer_c;
@@ -147,7 +144,7 @@ int ipc_dai_data_config(struct dai_data *dd, struct comp_dev *dev)
 		dev->ipc_config.frame_fmt = SOF_IPC_FRAME_S32_LE;
 		if (dd->dma_buffer) {
 			buffer_c = buffer_acquire(dd->dma_buffer);
-			audio_stream_set_frm_fmt(&buffer_c->stream, dev->ipc_config.frame_fmt);
+			buffer_c->stream.frame_fmt = dev->ipc_config.frame_fmt;
 			buffer_release(buffer_c);
 		}
 		dd->config.burst_elems = dai_get_fifo_depth(dd->dai, dai->direction);
@@ -172,7 +169,7 @@ int ipc_dai_data_config(struct dai_data *dd, struct comp_dev *dev)
 		dev->ipc_config.frame_fmt = SOF_IPC_FRAME_S32_LE;
 		if (dd->dma_buffer) {
 			buffer_c = buffer_acquire(dd->dma_buffer);
-			audio_stream_set_frm_fmt(&buffer_c->stream, dev->ipc_config.frame_fmt);
+			buffer_c->stream.frame_fmt = dev->ipc_config.frame_fmt;
 			buffer_release(buffer_c);
 		}
 		break;
@@ -266,8 +263,10 @@ int ipc_comp_dai_config(struct ipc *ipc, struct ipc_config_dai *common_config,
 	return ret;
 }
 
-void dai_dma_release(struct dai_data *dd, struct comp_dev *dev)
+void dai_dma_release(struct comp_dev *dev)
 {
+	struct dai_data *dd = comp_get_drvdata(dev);
+
 	/* cannot configure DAI while active */
 	if (dev->state == COMP_STATE_ACTIVE) {
 		comp_info(dev, "dai_config(): Component is in active state. Ignore resetting");
@@ -288,10 +287,11 @@ void dai_dma_release(struct dai_data *dd, struct comp_dev *dev)
 	}
 }
 
-int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai *common_config,
+int dai_config(struct comp_dev *dev, struct ipc_config_dai *common_config,
 	       const void *spec_config)
 {
 	const struct sof_ipc_dai_config *config = spec_config;
+	struct dai_data *dd = comp_get_drvdata(dev);
 	int ret;
 
 	/* ignore if message not for this DAI id/type */
@@ -336,7 +336,7 @@ int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai 
 			if (ret < 0)
 				return ret;
 
-			dai_dma_release(dd, dev);
+			dai_dma_release(dev);
 		}
 
 		return 0;
@@ -353,14 +353,14 @@ int dai_config(struct dai_data *dd, struct comp_dev *dev, struct ipc_config_dai 
 	}
 #if CONFIG_COMP_DAI_GROUP
 	if (config->group_id) {
-		ret = dai_assign_group(dd, dev, config->group_id);
+		ret = dai_assign_group(dev, config->group_id);
 
 		if (ret)
 			return ret;
 	}
 #endif
 	/* do nothing for asking for channel free, for compatibility. */
-	if (dai_config_dma_channel(dd, dev, spec_config) == DMA_CHAN_INVALID)
+	if (dai_config_dma_channel(dev, spec_config) == DMA_CHAN_INVALID)
 		return 0;
 
 	/* allocated dai_config if not yet */
@@ -396,6 +396,6 @@ int dai_position(struct comp_dev *dev, struct sof_ipc_stream_posn *posn)
 	return 0;
 }
 
-void dai_dma_position_update(struct dai_data *dd, struct comp_dev *dev) { }
+void dai_dma_position_update(struct comp_dev *dev) { }
 
-void dai_release_llp_slot(struct dai_data *dd) { }
+void dai_release_llp_slot(struct comp_dev *dev) { }

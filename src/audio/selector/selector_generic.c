@@ -36,15 +36,15 @@ static void sel_s16le_1ch(struct comp_dev *dev, struct audio_stream __sparse_cac
 			  const struct audio_stream __sparse_cache *source, uint32_t frames)
 {
 	struct comp_data *cd = comp_get_drvdata(dev);
-	int16_t *src = audio_stream_get_rptr(source);
-	int16_t *dest = audio_stream_get_wptr(sink);
+	int16_t *src = source->r_ptr;
+	int16_t *dest = sink->w_ptr;
 	int16_t *src_ch;
 	int nmax;
 	int i;
 	int n;
 	int processed = 0;
 	const int source_frame_bytes = audio_stream_frame_bytes(source);
-	const unsigned int nch = audio_stream_get_channels(source);
+	const unsigned int nch = source->channels;
 	const unsigned int sel_channel = cd->config.sel_channel; /* 0 to nch - 1 */
 
 	while (processed < frames) {
@@ -75,8 +75,8 @@ static void sel_s16le_1ch(struct comp_dev *dev, struct audio_stream __sparse_cac
 static void sel_s16le_nch(struct comp_dev *dev, struct audio_stream __sparse_cache *sink,
 			  const struct audio_stream __sparse_cache *source, uint32_t frames)
 {
-	int8_t *src = audio_stream_get_rptr(source);
-	int8_t *dst = audio_stream_get_wptr(sink);
+	int8_t *src = (int8_t *)source->r_ptr;
+	int8_t *dst = (int8_t *)sink->w_ptr;
 	int bmax;
 	int b;
 	int bytes_copied = 0;
@@ -108,15 +108,15 @@ static void sel_s32le_1ch(struct comp_dev *dev, struct audio_stream __sparse_cac
 			  const struct audio_stream __sparse_cache *source, uint32_t frames)
 {
 	struct comp_data *cd = comp_get_drvdata(dev);
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dest = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dest = sink->w_ptr;
 	int32_t *src_ch;
 	int nmax;
 	int i;
 	int n;
 	int processed = 0;
 	const int source_frame_bytes = audio_stream_frame_bytes(source);
-	const unsigned int nch = audio_stream_get_channels(source);
+	const unsigned int nch = source->channels;
 	const unsigned int sel_channel = cd->config.sel_channel; /* 0 to nch - 1 */
 
 	while (processed < frames) {
@@ -147,8 +147,8 @@ static void sel_s32le_1ch(struct comp_dev *dev, struct audio_stream __sparse_cac
 static void sel_s32le_nch(struct comp_dev *dev, struct audio_stream __sparse_cache *sink,
 			  const struct audio_stream __sparse_cache *source, uint32_t frames)
 {
-	int8_t *src = audio_stream_get_rptr(source);
-	int8_t *dst = audio_stream_get_wptr(sink);
+	int8_t *src = (int8_t *)source->r_ptr;
+	int8_t *dst = (int8_t *)sink->w_ptr;
 	int bmax;
 	int b;
 	int bytes_copied = 0;
@@ -208,16 +208,16 @@ static void sel_s16le(struct processing_module *mod, struct input_stream_buffer 
 	struct comp_data *cd = module_get_private_data(mod);
 	struct audio_stream __sparse_cache *source = bsource->data;
 	struct audio_stream __sparse_cache *sink = bsink->data;
-	int16_t *src = audio_stream_get_rptr(source);
-	int16_t *dest = audio_stream_get_wptr(sink);
+	int16_t *src = source->r_ptr;
+	int16_t *dest = sink->w_ptr;
 	int nmax;
 	int i;
 	int n;
 	int processed = 0;
 	int source_frame_bytes = audio_stream_frame_bytes(source);
 	int sink_frame_bytes = audio_stream_frame_bytes(sink);
-	int n_chan_source = MIN(SEL_SOURCE_CHANNELS_MAX, audio_stream_get_channels(source));
-	int n_chan_sink = MIN(SEL_SINK_CHANNELS_MAX, audio_stream_get_channels(sink));
+	int n_chan_source = MIN(SEL_SOURCE_CHANNELS_MAX, source->channels);
+	int n_chan_sink = MIN(SEL_SINK_CHANNELS_MAX, sink->channels);
 
 	while (processed < frames) {
 		n = frames - processed;
@@ -228,8 +228,8 @@ static void sel_s16le(struct processing_module *mod, struct input_stream_buffer 
 		for (i = 0; i < n; i++) {
 			process_frame_s16le(dest, n_chan_sink, src, n_chan_source,
 					    &cd->coeffs_config);
-			src += audio_stream_get_channels(source);
-			dest += audio_stream_get_channels(sink);
+			src += source->channels;
+			dest += sink->channels;
 		}
 		src = audio_stream_wrap(source, src);
 		dest = audio_stream_wrap(sink, dest);
@@ -279,16 +279,16 @@ static void sel_s32le(struct processing_module *mod, struct input_stream_buffer 
 	struct comp_data *cd = module_get_private_data(mod);
 	struct audio_stream __sparse_cache *source = bsource->data;
 	struct audio_stream __sparse_cache *sink = bsink->data;
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dest = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dest = sink->w_ptr;
 	int nmax;
 	int i;
 	int n;
 	int processed = 0;
 	int source_frame_bytes = audio_stream_frame_bytes(source);
 	int sink_frame_bytes = audio_stream_frame_bytes(sink);
-	int n_chan_source = MIN(SEL_SOURCE_CHANNELS_MAX, audio_stream_get_channels(source));
-	int n_chan_sink = MIN(SEL_SINK_CHANNELS_MAX, audio_stream_get_channels(sink));
+	int n_chan_source = MIN(SEL_SOURCE_CHANNELS_MAX, source->channels);
+	int n_chan_sink = MIN(SEL_SINK_CHANNELS_MAX, sink->channels);
 
 	while (processed < frames) {
 		n = frames - processed;
@@ -299,8 +299,8 @@ static void sel_s32le(struct processing_module *mod, struct input_stream_buffer 
 		for (i = 0; i < n; i++) {
 			process_frame_s32le(dest, n_chan_sink, src, n_chan_source,
 					    &cd->coeffs_config);
-			src += audio_stream_get_channels(source);
-			dest += audio_stream_get_channels(sink);
+			src += source->channels;
+			dest += sink->channels;
 		}
 		src = audio_stream_wrap(source, src);
 		dest = audio_stream_wrap(sink, dest);

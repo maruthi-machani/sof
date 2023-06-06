@@ -9,6 +9,7 @@ choice
 
 config TIGERLAKE
 	bool "Build for Tigerlake"
+	select XT_BOOT_LOADER
 	select XT_IRQ_MAP
 	select DMA_GW
 	select DW
@@ -33,13 +34,6 @@ config METEORLAKE
 	help
 	  Select if your target platform is Meteorlake-compatible
 
-config LUNARLAKE
-	bool "Build for Lunarlake"
-	select ACE
-	select ACE_VERSION_2_0
-	help
-	  Select if your target platform is Lunarlake-compatible
-
 config LIBRARY
 	bool "Build Library"
 	help
@@ -47,13 +41,6 @@ config LIBRARY
 	  It is generic/mock configuration not tied to some specific platform.
 	  Library builds are not intended to be run on DSP, but to be used by
 	  user-space applications.
-
-config LIBRARY_STATIC
-	bool "Build Library as static archive"
-	depends on LIBRARY
-	help
-	  Select if you want to build a static library otherwise a dynamic
-	  shared library will be built.
 
 config ZEPHYR_POSIX
 	bool "Build for Zephyr native_posix board"
@@ -131,15 +118,6 @@ config IMX8ULP
 	 Select if your target platform is imx8ulp-compatible.
 	 imx.8ulp support dsp.
 
-config IMX93_A55
-	bool "Build for NXP i.MX93 arm64 architecture (Zephyr-only)"
-	select BUILD_OUTPUT_BIN
-	select ZEPHYR_LOG
-	select HOST_PTABLE
-	select DMA_DOMAIN
-	help
-	 Select if your target platform is imx93-compatible.
-
 config RENOIR
 	bool "Build for Renoir"
 	select XT_INTERRUPT_LEVEL_5
@@ -210,7 +188,6 @@ endchoice
 
 config MAX_CORE_COUNT
 	int
-	default 5 if LUNARLAKE
 	default 4 if TIGERLAKE
 	default 3 if METEORLAKE
 	default 1
@@ -287,12 +264,6 @@ config ACE_VERSION_1_5
 	bool
 	help
 	  Select for ACE version 1.5
-
-config ACE_VERSION_2_0
-	depends on ACE
-	bool
-	help
-	  Select for ACE version 2.0
 
 config HP_MEMORY_BANKS
 	int "HP memory banks count"
@@ -429,7 +400,6 @@ config HAVE_AGENT
 config AMS
 	bool "Enable Async Messaging Service"
 	default n
-	depends on IPC_MAJOR_4
 	help
 	  Enables Async Messaging Service.
 	  Async messages are used to send messages between modules.

@@ -76,16 +76,6 @@ struct timestamp_ops {
 		      struct timestamp_data *tsd);
 };
 
-union hdalink_cfg {
-	uint16_t full;
-	struct {
-		uint16_t lchan	:4;
-		uint16_t hchan	:4;
-		uint16_t stream	:6;
-		uint16_t rsvd	:1;
-		uint16_t dir	:1;
-	} part;
-};
 /**
  * \brief DAI group information
  */
@@ -263,29 +253,22 @@ int dai_get_stream_id(struct dai *dai, int direction);
 /**
  * \brief Configure DMA channel for DAI
  */
-int dai_config_dma_channel(struct dai_data *dd, struct comp_dev *dev, const void *config);
+int dai_config_dma_channel(struct comp_dev *dev, const void *config);
 
-/**
- * \brief Configure HD Audio DMA params for DAI
- */
-void dai_set_link_hda_config(uint16_t *link_config,
-			     struct ipc_config_dai *common_config,
-			     const void *spec_config);
 /**
  * \brief Reset DAI DMA config
  */
-void dai_dma_release(struct dai_data *dd, struct comp_dev *dev);
+void dai_dma_release(struct comp_dev *dev);
 
 /**
  * \brief Configure DAI physical interface.
  */
-int dai_config(struct dai_data *dd, struct comp_dev *dev,
-	       struct ipc_config_dai *common_cfg, const void *spec_cfg);
+int dai_config(struct comp_dev *dev,  struct ipc_config_dai *common_cfg, const void *spec_cfg);
 
 /**
  * \brief Assign DAI to a group for simultaneous triggering.
  */
-int dai_assign_group(struct dai_data *dd, struct comp_dev *dev, uint32_t group_id);
+int dai_assign_group(struct comp_dev *dev, uint32_t group_id);
 
 /**
  * \brief dai position for host driver.
@@ -295,12 +278,12 @@ int dai_position(struct comp_dev *dev, struct sof_ipc_stream_posn *posn);
 /**
  * \brief update dai dma position for host driver.
  */
-void dai_dma_position_update(struct dai_data *dd, struct comp_dev *dev);
+void dai_dma_position_update(struct comp_dev *dev);
 
 /**
  * \brief release llp slot
  */
-void dai_release_llp_slot(struct dai_data *dd);
+void dai_release_llp_slot(struct comp_dev *dev);
 /** @}*/
 
 #endif /* __SOF_LIB_DAI_ZEPHYR_H__ */

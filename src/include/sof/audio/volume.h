@@ -65,10 +65,8 @@ struct sof_ipc_ctrl_value_chan;
 //** \brief Volume gain Qx.y */
 #define COMP_VOLUME_Q1_23 1
 
-/** \brief Volume gain Qx.y integer x number of bits including sign bit.
- * With Q8.23 format the gain range is -138.47 to +42.14 dB.
- */
-#define VOL_QXY_X 8
+//** \brief Volume gain Qx.y integer x number of bits including sign bit. */
+#define VOL_QXY_X 1
 
 //** \brief Volume gain Qx.y fractional y number of bits. */
 #define VOL_QXY_Y 23
@@ -90,12 +88,6 @@ struct sof_ipc_ctrl_value_chan;
 #define VOL_RAMP_UPDATE_THRESHOLD_SLOW_MS	128
 #define VOL_RAMP_UPDATE_THRESHOLD_FAST_MS	64
 #define VOL_RAMP_UPDATE_THRESHOLD_FASTEST_MS	32
-
-/**
- * \brief left shift 8 bits to put the valid 24 bits into
- * higher part of 32 bits container.
- */
-#define PEAK_24S_32C_ADJUST 8
 
 /**
  * \brief Volume maximum value.
@@ -198,7 +190,7 @@ static inline vol_scale_func vol_get_processing_function(struct comp_dev *dev,
 
 	/* map the volume function for source and sink buffers */
 	for (i = 0; i < volume_func_count; i++) {
-		if (audio_stream_get_frm_fmt(&sinkb->stream) != volume_func_map[i].frame_fmt)
+		if (sinkb->stream.frame_fmt != volume_func_map[i].frame_fmt)
 			continue;
 
 		return volume_func_map[i].func;

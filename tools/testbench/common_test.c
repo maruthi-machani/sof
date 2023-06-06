@@ -24,14 +24,9 @@
 #include <sof/schedule/schedule.h>
 #include <rtos/wait.h>
 #include <sof/audio/pipeline.h>
-#include <sof/audio/component_ext.h>
 #include "testbench/common_test.h"
 #include "testbench/trace.h"
 #include <tplg_parser/topology.h>
-
-#if defined __XCC__
-#include <xtensa/tie/xt_timer.h>
-#endif
 
 /* testbench helper functions for pipeline setup and trigger */
 
@@ -43,22 +38,6 @@ int tb_setup(struct sof *sof, struct testbench_prm *tp)
 
 	/* init components */
 	sys_comp_init(sof);
-	sys_comp_file_init();
-	sys_comp_asrc_init();
-	sys_comp_crossover_init();
-	sys_comp_dcblock_init();
-	sys_comp_drc_init();
-	sys_comp_multiband_drc_init();
-	sys_comp_selector_init();
-
-	/* Module adapter components */
-	sys_comp_module_demux_interface_init();
-	sys_comp_module_eq_fir_interface_init();
-	sys_comp_module_eq_iir_interface_init();
-	sys_comp_module_mux_interface_init();
-	sys_comp_module_src_interface_init();
-	sys_comp_module_tdfb_interface_init();
-	sys_comp_module_volume_interface_init();
 
 	/* other necessary initializations, todo: follow better SOF init */
 	pipeline_posn_init(sof);
@@ -193,7 +172,7 @@ int tb_pipeline_reset(struct ipc *ipc, struct pipeline *p)
 }
 
 /* pipeline pcm params */
-int tb_pipeline_params(struct testbench_prm *tp, struct ipc *ipc, struct pipeline *p,
+int tb_pipeline_params(struct ipc *ipc, struct pipeline *p,
 		       struct tplg_context *ctx)
 {
 	struct ipc_comp_dev *pcm_dev;
@@ -212,16 +191,16 @@ int tb_pipeline_params(struct testbench_prm *tp, struct ipc *ipc, struct pipelin
 	period = p->period;
 
 	/* Compute period from sample rates */
-	fs_period = (int)(0.9999 + tp->fs_in * period / 1e6);
+	fs_period = (int)(0.9999 + ctx->fs_in * period / 1e6);
 	sprintf(message, "period sample count %d\n", fs_period);
 	debug_print(message);
 
 	/* set pcm params */
 	params.comp_id = p->comp_id;
 	params.params.buffer_fmt = SOF_IPC_BUFFER_INTERLEAVED;
-	params.params.frame_fmt = tp->frame_fmt;
-	params.params.rate = tp->fs_in;
-	params.params.channels = tp->channels_in;
+	params.params.frame_fmt = ctx->frame_fmt;
+	params.params.rate = ctx->fs_in;
+	params.params.channels = ctx->channels_in;
 
 	switch (params.params.frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
@@ -257,16 +236,96 @@ int tb_pipeline_params(struct testbench_prm *tp, struct ipc *ipc, struct pipelin
 	/* Set pipeline params direction from scheduling component */
 	params.params.direction = cd->direction;
 
-	printf("test params: rate %d channels %d format %d\n",
-	       params.params.rate, params.params.channels,
-	       params.params.frame_fmt);
-
 	/* pipeline params */
 	ret = pipeline_params(p, cd, &params);
 	if (ret < 0)
 		fprintf(stderr, "error: pipeline_params\n");
 
 	return ret;
+}
+
+/* getindex of shared library from table */
+int get_index_by_name(char *comp_type, struct shared_lib_table *lib_table)
+{
+	int i;
+
+	for (i = 0; i < NUM_WIDGETS_SUPPORTED; i++) {
+		if (!strcmp(comp_type, lib_table[i].comp_name))
+			return i;
+	}
+
+	return -EINVAL;
+}
+
+/* getindex of shared library from table by widget type*/
+int get_index_by_type(uint32_t comp_type, struct shared_lib_table *lib_table)
+{
+	int i;
+
+	for (i = 0; i < NUM_WIDGETS_SUPPORTED; i++) {
+		if (comp_type == lib_table[i].widget_type)
+			return i;
+	}
+
+	return -EINVAL;
+}
+
+/* get index of shared library from table by uuid */
+int get_index_by_uuid(struct sof_ipc_comp_ext *comp_ext,
+		      struct shared_lib_table *lib_table)
+{
+	int i;
+
+	for (i = 0; i < NUM_WIDGETS_SUPPORTED; i++) {
+		if (lib_table[i].uid) {
+			if (!memcmp(lib_table[i].uid, comp_ext->uuid, UUID_SIZE))
+				return i;
+		}
+	}
+
+	return -EINVAL;
+}
+
+/* The following definitions are to satisfy libsof linker errors */
+
+struct dai *dai_get(uint32_t type, uint32_t index, uint32_t flags)
+{
+	return NULL;
+}
+
+void dai_put(struct dai *dai)
+{
+}
+
+struct dma *dma_get(uint32_t dir, uint32_t caps, uint32_t dev, uint32_t flags)
+{
+	return NULL;
+}
+
+void dma_put(struct dma *dma)
+{
+}
+
+int dma_sg_alloc(struct dma_sg_elem_array *elem_array,
+		 enum mem_zone zone,
+		 uint32_t direction,
+		 uint32_t buffer_count, uint32_t buffer_bytes,
+		 uintptr_t dma_buffer_addr, uintptr_t external_addr)
+{
+	return 0;
+}
+
+void dma_sg_free(struct dma_sg_elem_array *elem_array)
+{
+}
+
+void pipeline_xrun(struct pipeline *p, struct comp_dev *dev, int32_t bytes)
+{
+}
+
+int dai_assign_group(struct comp_dev *dev, uint32_t group_id)
+{
+	return 0;
 }
 
 /* print debug messages */
@@ -284,23 +343,4 @@ void tb_enable_trace(bool enable)
 		debug_print("trace print enabled\n");
 	else
 		debug_print("trace print disabled\n");
-}
-
-void tb_gettime(struct timespec *td)
-{
-#if !defined __XCC__
-	clock_gettime(CLOCK_MONOTONIC, td);
-#else
-	td->tv_nsec = 0;
-	td->tv_sec = 0;
-#endif
-}
-
-void tb_getcycles(uint64_t *cycles)
-{
-#if defined __XCC__
-	*cycles = XT_RSR_CCOUNT();
-#else
-	*cycles = 0;
-#endif
 }

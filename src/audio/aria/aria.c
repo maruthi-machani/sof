@@ -218,20 +218,16 @@ static void aria_free(struct comp_dev *dev)
 static void aria_set_stream_params(struct comp_buffer *buffer, struct aria_data *cd)
 {
 	struct comp_buffer __sparse_cache *buffer_c;
-	enum sof_ipc_frame valid_fmt, frame_fmt;
 
 	buffer_c = buffer_acquire(buffer);
+	buffer_c->stream.channels = cd->chan_cnt;
+	buffer_c->stream.rate = cd->base.audio_fmt.sampling_frequency;
 	buffer_c->buffer_fmt = cd->base.audio_fmt.interleaving_style;
 	audio_stream_fmt_conversion(cd->base.audio_fmt.depth,
 				    cd->base.audio_fmt.valid_bit_depth,
-				    &frame_fmt, &valid_fmt,
+				    &buffer_c->stream.frame_fmt,
+				    &buffer_c->stream.valid_sample_fmt,
 				    cd->base.audio_fmt.s_type);
-
-	audio_stream_set_frm_fmt(&buffer_c->stream, frame_fmt);
-	audio_stream_set_valid_fmt(&buffer_c->stream, valid_fmt);
-	audio_stream_set_channels(&buffer_c->stream, cd->chan_cnt);
-	audio_stream_set_rate(&buffer_c->stream, cd->base.audio_fmt.sampling_frequency);
-
 	buffer_release(buffer_c);
 }
 
@@ -304,6 +300,9 @@ static int aria_copy(struct comp_dev *dev)
 	struct aria_data *cd;
 	uint32_t source_bytes;
 	uint32_t sink_bytes;
+	uint32_t frag = 0;
+	int32_t *destp;
+	int32_t i, channel;
 
 	cd = comp_get_drvdata(dev);
 
@@ -326,16 +325,31 @@ static int aria_copy(struct comp_dev *dev)
 
 	buffer_stream_invalidate(source_c, source_bytes);
 
-	audio_stream_copy_to_linear(&source_c->stream, 0, cd->buf_in, 0,
-				    c.frames * source_c->stream.channels);
-	dcache_writeback_region((__sparse_force void __sparse_cache *)cd->buf_in, source_bytes);
+	for (i = 0; i < c.frames; i++) {
+		for (channel = 0; channel < sink_c->stream.channels; channel++) {
+			cd->buf_in[frag] = *(int32_t *)audio_stream_read_frag_s32(&source_c->stream,
+										  frag);
+
+			frag++;
+		}
+	}
+	dcache_writeback_region((__sparse_force void __sparse_cache *)cd->buf_in,
+				c.frames * sink_c->stream.channels * sizeof(int32_t));
 
 	aria_process_data(dev, cd->buf_out, sink_bytes / sizeof(uint32_t),
 			  cd->buf_in, source_bytes / sizeof(uint32_t));
 
-	dcache_writeback_region((__sparse_force void __sparse_cache *)cd->buf_out, sink_bytes);
-	audio_stream_copy_from_linear(cd->buf_out, 0, &sink_c->stream, 0,
-				      c.frames * sink_c->stream.channels);
+	dcache_writeback_region((__sparse_force void __sparse_cache *)cd->buf_out,
+				c.frames * sink_c->stream.channels * sizeof(int32_t));
+	frag = 0;
+	for (i = 0; i < c.frames; i++) {
+		for (channel = 0; channel < sink_c->stream.channels; channel++) {
+			destp = audio_stream_write_frag_s32(&sink_c->stream, frag);
+			*destp = cd->buf_out[frag];
+
+			frag++;
+		}
+	}
 
 	buffer_stream_writeback(sink_c, sink_bytes);
 

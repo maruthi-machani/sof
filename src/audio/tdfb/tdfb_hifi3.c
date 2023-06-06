@@ -16,18 +16,17 @@
 #include <sof/math/fir_hifi3.h>
 
 #if CONFIG_FORMAT_S16LE
-void tdfb_fir_s16(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource,
-		  struct output_stream_buffer *bsink, int frames)
+void tdfb_fir_s16(struct tdfb_comp_data *cd,
+		  const struct audio_stream __sparse_cache *source,
+		  struct audio_stream __sparse_cache *sink, int frames)
 {
-	struct audio_stream __sparse_cache *source = bsource->data;
-	struct audio_stream __sparse_cache *sink = bsink->data;
 	struct sof_tdfb_config *cfg = cd->config;
 	struct fir_state_32x16 *f;
 	ae_int16x4 d;
 	ae_int32 y0;
 	ae_int32 y1;
-	ae_int16 *x = audio_stream_get_rptr(source);
-	ae_int16 *y = audio_stream_get_wptr(sink);
+	ae_int16 *x = (ae_int16 *)source->r_ptr;
+	ae_int16 *y = (ae_int16 *)sink->w_ptr;
 	int shift;
 	int is2;
 	int is;
@@ -35,8 +34,8 @@ void tdfb_fir_s16(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource
 	int i;
 	int j;
 	int k;
-	int in_nch = audio_stream_get_channels(source);
-	int out_nch = audio_stream_get_channels(sink);
+	int in_nch = source->channels;
+	int out_nch = sink->channels;
 	int emp_ch = 0;
 
 	for (j = 0; j < (frames >> 1); j++) {
@@ -91,18 +90,17 @@ void tdfb_fir_s16(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource
 #endif
 
 #if CONFIG_FORMAT_S24LE
-void tdfb_fir_s24(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource,
-		  struct output_stream_buffer *bsink, int frames)
+void tdfb_fir_s24(struct tdfb_comp_data *cd,
+		  const struct audio_stream __sparse_cache *source,
+		  struct audio_stream __sparse_cache *sink, int frames)
 {
-	struct audio_stream __sparse_cache *source = bsource->data;
-	struct audio_stream __sparse_cache *sink = bsink->data;
 	struct sof_tdfb_config *cfg = cd->config;
 	struct fir_state_32x16 *f;
 	ae_int32x2 d;
 	ae_int32 y0;
 	ae_int32 y1;
-	ae_int32 *x = audio_stream_get_rptr(source);
-	ae_int32 *y = audio_stream_get_wptr(sink);
+	ae_int32 *x = (ae_int32 *)source->r_ptr;
+	ae_int32 *y = (ae_int32 *)sink->w_ptr;
 	int shift;
 	int is2;
 	int is;
@@ -110,8 +108,8 @@ void tdfb_fir_s24(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource
 	int i;
 	int j;
 	int k;
-	int in_nch = audio_stream_get_channels(source);
-	int out_nch = audio_stream_get_channels(sink);
+	int in_nch = source->channels;
+	int out_nch = sink->channels;
 	int emp_ch = 0;
 
 	for (j = 0; j < (frames >> 1); j++) {
@@ -165,18 +163,17 @@ void tdfb_fir_s24(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource
 #endif
 
 #if CONFIG_FORMAT_S32LE
-void tdfb_fir_s32(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource,
-		  struct output_stream_buffer *bsink, int frames)
+void tdfb_fir_s32(struct tdfb_comp_data *cd,
+		  const struct audio_stream __sparse_cache *source,
+		  struct audio_stream __sparse_cache *sink, int frames)
 {
-	struct audio_stream __sparse_cache *source = bsource->data;
-	struct audio_stream __sparse_cache *sink = bsink->data;
 	struct sof_tdfb_config *cfg = cd->config;
 	struct fir_state_32x16 *f;
 	ae_int32x2 d;
 	ae_int32 y0;
 	ae_int32 y1;
-	ae_int32 *x = audio_stream_get_rptr(source);
-	ae_int32 *y = audio_stream_get_wptr(sink);
+	ae_int32 *x = (ae_int32 *)source->r_ptr;
+	ae_int32 *y = (ae_int32 *)sink->w_ptr;
 	int shift;
 	int is2;
 	int is;
@@ -184,8 +181,8 @@ void tdfb_fir_s32(struct tdfb_comp_data *cd, struct input_stream_buffer *bsource
 	int i;
 	int j;
 	int k;
-	int in_nch = audio_stream_get_channels(source);
-	int out_nch = audio_stream_get_channels(sink);
+	int in_nch = source->channels;
+	int out_nch = sink->channels;
 	int emp_ch = 0;
 
 	for (j = 0; j < (frames >> 1); j++) {

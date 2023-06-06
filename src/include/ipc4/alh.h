@@ -25,15 +25,10 @@
 #define __SOF_IPC4_ALH_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <ipc4/gateway.h>
 
 #define IPC4_ALH_MAX_NUMBER_OF_GTW 16
-#ifdef CONFIG_DMA_INTEL_ADSP_GPDMA
 #define IPC4_ALH_DAI_INDEX_OFFSET 7
-#else
-#define IPC4_ALH_DAI_INDEX_OFFSET 0
-#endif
 
 /* copier id = (group id << 4) + codec id + IPC4_ALH_DAI_INDEX_OFFSET
  * dai_index = (group id << 8) + codec id;

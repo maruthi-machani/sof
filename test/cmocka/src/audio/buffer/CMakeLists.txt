@@ -13,7 +13,6 @@ cmocka_test(buffer_copy
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-stream.c
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-xrun.c
 	${PROJECT_SOURCE_DIR}/src/audio/component.c
-	${PROJECT_SOURCE_DIR}/src/math/numbers.c
 )
 
 cmocka_test(buffer_new
@@ -30,7 +29,6 @@ cmocka_test(buffer_new
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-stream.c
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-xrun.c
 	${PROJECT_SOURCE_DIR}/src/audio/component.c
-	${PROJECT_SOURCE_DIR}/src/math/numbers.c
 )
 
 cmocka_test(buffer_wrap
@@ -47,7 +45,6 @@ cmocka_test(buffer_wrap
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-stream.c
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-xrun.c
 	${PROJECT_SOURCE_DIR}/src/audio/component.c
-	${PROJECT_SOURCE_DIR}/src/math/numbers.c
 )
 
 cmocka_test(buffer_write
@@ -64,5 +61,4 @@ cmocka_test(buffer_write
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-stream.c
 	${PROJECT_SOURCE_DIR}/src/audio/pipeline/pipeline-xrun.c
 	${PROJECT_SOURCE_DIR}/src/audio/component.c
-	${PROJECT_SOURCE_DIR}/src/math/numbers.c
 )

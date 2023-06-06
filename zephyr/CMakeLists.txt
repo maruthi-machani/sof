@@ -46,8 +46,7 @@ endfunction()
 zephyr_interface_library_named(SOF)
 
 # SOF source paths.
-cmake_path(SET sof_top_dir NORMALIZE "${CMAKE_CURRENT_SOURCE_DIR}/..")
-set(SOF_SRC_PATH "${sof_top_dir}/src")
+set(SOF_SRC_PATH "../src")
 set(SOF_PLATFORM_PATH "${SOF_SRC_PATH}/platform")
 set(SOF_AUDIO_PATH "${SOF_SRC_PATH}/audio")
 set(SOF_AUDIO_MODULES_PATH "${SOF_SRC_PATH}/audio/module_adapter/module")
@@ -87,18 +86,18 @@ ExternalProject_Add(sof_logger_ep
 )
 
 # default SOF includes
-target_include_directories(SOF INTERFACE ${sof_top_dir}/rimage/src/include)
+target_include_directories(SOF INTERFACE ../rimage/src/include)
 target_include_directories(SOF INTERFACE ${SOF_SRC_PATH}/include)
 target_include_directories(SOF INTERFACE ${SOF_SRC_PATH}/arch/${ARCH}/include)
-target_include_directories(SOF INTERFACE ${sof_top_dir}/third_party/include)
+target_include_directories(SOF INTERFACE ${SOF_SRC_PATH}/../third_party/include)
 
 # TODO: Zephyr should not need xtos headers: FIX.
 if (CONFIG_SOF_ZEPHYR_STRICT_HEADERS)
-	target_include_directories(SOF INTERFACE ${sof_top_dir}/zephyr/include)
+	target_include_directories(SOF INTERFACE ${SOF_SRC_PATH}/../zephyr/include)
 else()
 	# include Zephyr before xtos to flag up any errors in SOF
-	target_include_directories(SOF INTERFACE ${sof_top_dir}/zephyr/include)
-	target_include_directories(SOF INTERFACE ${sof_top_dir}/xtos/include)
+	target_include_directories(SOF INTERFACE ${SOF_SRC_PATH}/../zephyr/include)
+	target_include_directories(SOF INTERFACE ${SOF_SRC_PATH}/../xtos/include)
 endif()
 
 # SOF module init
@@ -208,7 +207,7 @@ if (CONFIG_SOC_SERIES_INTEL_CAVS_V25)
 endif()
 
 # Intel ACE 1.5 and newer platforms
-if (CONFIG_SOC_SERIES_INTEL_ACE)
+if (CONFIG_ACE_VERSION_1_5)
 
 	# Driver sources
 	zephyr_library_sources(
@@ -218,22 +217,11 @@ if (CONFIG_SOC_SERIES_INTEL_ACE)
 	# Platform sources
 	zephyr_library_sources(
 		${SOF_PLATFORM_PATH}/intel/ace/platform.c
+		${SOF_PLATFORM_PATH}/meteorlake/lib/clk.c
 		lib/pm_runtime.c
 		lib/clk.c
 		lib/dma.c
 	)
-
-	if (CONFIG_SOC_INTEL_ACE15_MTPM)
-		zephyr_library_sources(
-			${SOF_PLATFORM_PATH}/meteorlake/lib/clk.c
-		)
-	endif()
-
-	if (CONFIG_SOC_INTEL_ACE20_LNL)
-		zephyr_library_sources(
-			${SOF_PLATFORM_PATH}/lunarlake/lib/clk.c
-		)
-	endif()
 
 	# SOF core infrastructure - runs on top of Zephyr
 	zephyr_library_sources(
@@ -257,13 +245,10 @@ if (CONFIG_SOC_SERIES_INTEL_ACE)
 		${SOF_PLATFORM_PATH}/intel/ace/lib/watchdog.c
 	)
 
-	if (CONFIG_SOC_INTEL_ACE15_MTPM)
-		set(PLATFORM "meteorlake")
-	elseif(CONFIG_SOC_INTEL_ACE20_LNL)
-		set(PLATFORM "lunarlake")
-	endif()
+	set(PLATFORM "meteorlake")
+
 	zephyr_include_directories(${SOF_PLATFORM_PATH}/intel/ace/include)
-	zephyr_include_directories(${SOF_PLATFORM_PATH}/${PLATFORM}/include)
+	zephyr_include_directories(${SOF_PLATFORM_PATH}/meteorlake/include)
 endif()
 
 # NXP IMX8 platforms
@@ -291,7 +276,12 @@ if (CONFIG_SOC_SERIES_NXP_IMX8)
 		${SOF_SRC_PATH}/drivers/interrupt.c
 	)
 
-	zephyr_library_sources(${SOF_SRC_PATH}/schedule/zephyr_ll.c)
+	# Zephyr DMA domain should only be used with zephyr_ll
+	if (NOT(CONFIG_DMA_DOMAIN))
+		zephyr_library_sources(${SOF_SRC_PATH}/schedule/ll_schedule.c)
+	else()
+		zephyr_library_sources(${SOF_SRC_PATH}/schedule/zephyr_ll.c)
+	endif()
 
 	set(PLATFORM "imx8")
 endif()
@@ -319,33 +309,14 @@ if (CONFIG_SOC_SERIES_NXP_IMX8M)
 		${SOF_SRC_PATH}/drivers/interrupt.c
 	)
 
-	zephyr_library_sources(${SOF_SRC_PATH}/schedule/zephyr_ll.c)
+	# Zephyr DMA domain should only be used with zephyr_ll
+	if (NOT(CONFIG_DMA_DOMAIN))
+		zephyr_library_sources(${SOF_SRC_PATH}/schedule/ll_schedule.c)
+	else()
+		zephyr_library_sources(${SOF_SRC_PATH}/schedule/zephyr_ll.c)
+	endif()
 
 	set(PLATFORM "imx8m")
-endif()
-
-if (CONFIG_SOC_SERIES_MIMX9_A55)
-	# Platform sources
-	zephyr_library_sources(
-		${SOF_PLATFORM_PATH}/imx93_a55/platform.c
-		${SOF_PLATFORM_PATH}/imx93_a55/lib/clk.c
-		${SOF_PLATFORM_PATH}/imx93_a55/lib/dma.c
-		${SOF_PLATFORM_PATH}/imx93_a55/lib/dai.c
-	)
-
-	# Drivers
-	zephyr_library_sources(
-		${SOF_DRIVERS_PATH}/generic/dummy-dma.c
-		${SOF_DRIVERS_PATH}/imx/ipc.c
-		${SOF_DRIVERS_PATH}/imx/edma.c
-		${SOF_DRIVERS_PATH}/imx/sai.c
-	)
-
-	zephyr_library_sources(
-		${SOF_SRC_PATH}/schedule/zephyr_ll.c
-	)
-
-	set(PLATFORM "imx93_a55")
 endif()
 
 # Building for native_posix-based whole-OS host emulator
@@ -550,7 +521,7 @@ else()
 endif()
 
 zephyr_library_sources_ifdef(CONFIG_IPC4_GATEWAY
-	${SOF_AUDIO_PATH}/copier/copier_ipcgtw.c
+	${SOF_AUDIO_PATH}/ipcgtw.c
 )
 
 zephyr_library_sources_ifdef(CONFIG_SAMPLE_KEYPHRASE
@@ -625,7 +596,6 @@ zephyr_library_sources_ifdef(CONFIG_COMP_COPIER
 	${SOF_AUDIO_PATH}/copier/copier_generic.c
 	${SOF_AUDIO_PATH}/copier/copier_hifi.c
 	${SOF_AUDIO_PATH}/copier/copier.c
-	${SOF_AUDIO_PATH}/copier/copier_host.c
 )
 
 zephyr_library_sources_ifdef(CONFIG_MAXIM_DSM
@@ -674,15 +644,9 @@ zephyr_library_sources_ifdef(CONFIG_COMP_RTNR
 	${SOF_AUDIO_PATH}/rtnr/rtnr.c
 )
 
-if(CONFIG_IPC_MAJOR_3)
-	zephyr_library_sources_ifdef(CONFIG_SAMPLE_SMART_AMP
-		${SOF_SAMPLES_PATH}/audio/smart_amp_test_ipc3.c
-	)
-elseif(CONFIG_IPC_MAJOR_4)
-	zephyr_library_sources_ifdef(CONFIG_SAMPLE_SMART_AMP
-		${SOF_SAMPLES_PATH}/audio/smart_amp_test_ipc4.c
-	)
-endif()
+zephyr_library_sources_ifdef(CONFIG_SAMPLE_SMART_AMP
+	${SOF_SAMPLES_PATH}/audio/smart_amp_test.c
+)
 
 zephyr_library_sources_ifdef(CONFIG_COMP_TDFB
 	${SOF_AUDIO_PATH}/tdfb/tdfb.c
@@ -736,7 +700,6 @@ zephyr_library_sources_ifdef(CONFIG_HAVE_AGENT
 
 zephyr_library_sources_ifdef(CONFIG_AMS
 	${SOF_LIB_PATH}/ams.c
-	${SOF_IPC_PATH}/ipc4/ams_helpers.c
 )
 
 zephyr_library_sources_ifdef(CONFIG_GDB_DEBUG
@@ -752,7 +715,7 @@ zephyr_library_link_libraries(SOF)
 target_link_libraries(SOF INTERFACE zephyr_interface)
 
 # Setup SOF directories
-set(SOF_ROOT_SOURCE_DIRECTORY ${sof_top_dir})
+set(SOF_ROOT_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(SOF_ROOT_BINARY_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # This generated/ directory is shared with Zephyr.

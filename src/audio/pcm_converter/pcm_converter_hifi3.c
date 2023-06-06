@@ -44,8 +44,8 @@ static int pcm_convert_s16_to_s24(const struct audio_stream __sparse_cache *sour
 	uint32_t nmax, i, n, m, left, left_samples;
 	ae_valign inu = AE_ZALIGN64();
 	ae_valign outu = AE_ZALIGN64();
-	int16_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int16_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 
 	ae_int16x4 *in = audio_stream_wrap(source, src + ioffset);
 	ae_int32x2 *out = audio_stream_wrap(sink, dst + ooffset);
@@ -120,8 +120,8 @@ static int pcm_convert_s24_to_s16(const struct audio_stream __sparse_cache *sour
 	uint32_t nmax, i, n, m, left, left_samples;
 	ae_valign inu = AE_ZALIGN64();
 	ae_valign outu = AE_ZALIGN64();
-	ae_int32 *src = audio_stream_get_rptr(source);
-	ae_int16 *dst = audio_stream_get_wptr(sink);
+	ae_int32 *src = source->r_ptr;
+	ae_int16 *dst = sink->w_ptr;
 
 	ae_int32x2 *in = audio_stream_wrap(source, src + ioffset);
 	ae_int16x4 *out = audio_stream_wrap(sink, dst + ooffset);
@@ -185,8 +185,8 @@ static int pcm_convert_s16_to_s32(const struct audio_stream __sparse_cache *sour
 				  uint32_t ioffset, struct audio_stream __sparse_cache *sink,
 				  uint32_t ooffset, uint32_t samples)
 {
-	int16_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int16_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int16x4 sample = AE_ZERO16();
 	uint32_t nmax, i, n, m, left, left_samples;
 	ae_valign inu = AE_ZALIGN64();
@@ -241,8 +241,8 @@ static int pcm_convert_s32_to_s16(const struct audio_stream __sparse_cache *sour
 				  uint32_t ioffset, struct audio_stream __sparse_cache *sink,
 				  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int16_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int16_t *dst = sink->w_ptr;
 	ae_int16x4 sample = AE_ZERO16();
 	ae_int32x2 sample_1 = AE_ZERO32();
 	ae_int32x2 sample_2 = AE_ZERO32();
@@ -307,8 +307,8 @@ static int pcm_convert_s24_to_s32(const struct audio_stream __sparse_cache *sour
 				  uint32_t ioffset, struct audio_stream __sparse_cache *sink,
 				  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -372,8 +372,8 @@ static int pcm_convert_s32_to_s24(const struct audio_stream __sparse_cache *sour
 				  uint32_t ioffset, struct audio_stream __sparse_cache *sink,
 				  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -417,8 +417,8 @@ static int pcm_convert_s32_to_s24_be(const struct audio_stream __sparse_cache *s
 				     uint32_t ioffset, struct audio_stream __sparse_cache *sink,
 				     uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -815,8 +815,8 @@ static int pcm_convert_s16_c16_to_s16_c32(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int16_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int16_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int16x4 sample = AE_ZERO16();
 	uint32_t nmax, i, n, m, left, left_samples;
 	ae_valign inu = AE_ZALIGN64();
@@ -865,8 +865,8 @@ static int pcm_convert_s16_c32_to_s16_c16(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int16_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int16_t *dst = sink->w_ptr;
 	ae_int16x4 sample = AE_ZERO16();
 	ae_int32x2 sample_1 = AE_ZERO32();
 	ae_int32x2 sample_2 = AE_ZERO32();
@@ -924,8 +924,8 @@ static int pcm_convert_s16_c32_to_s32_c32(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -967,8 +967,8 @@ static int pcm_convert_s32_c32_to_s16_c32(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -1012,8 +1012,8 @@ static int pcm_convert_s16_c32_to_s24_c32(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -1067,8 +1067,8 @@ static int pcm_convert_s24_c32_to_s16_c32(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
 	ae_valign outu = AE_ZALIGN64();
@@ -1114,8 +1114,8 @@ static int pcm_convert_s24_c24_to_s24_c32(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	uint8_t *src = audio_stream_get_rptr(source);
-	int32_t *dst = audio_stream_get_wptr(sink);
+	uint8_t *src = source->r_ptr;
+	int32_t *dst = sink->w_ptr;
 	ae_int24x2 sample24 =  AE_ZERO24();
 	ae_int32x2 sample = AE_ZERO32();
 	uint32_t nmax, i, n, m, left_samples;
@@ -1161,8 +1161,8 @@ static int pcm_convert_s24_c32_to_s24_c24(const struct audio_stream __sparse_cac
 					  struct audio_stream __sparse_cache *sink,
 					  uint32_t ooffset, uint32_t samples)
 {
-	int32_t *src = audio_stream_get_rptr(source);
-	uint8_t *dst = audio_stream_get_wptr(sink);
+	int32_t *src = source->r_ptr;
+	uint8_t *dst = sink->w_ptr;
 	ae_int32x2 sample = AE_ZERO32();
 	ae_int24x2 sample24 =  AE_ZERO24();
 	uint32_t nmax, i, n, m, left_samples;
@@ -1237,56 +1237,35 @@ const struct pcm_func_vc_map pcm_func_vc_map[] = {
 #endif
 #if CONFIG_PCM_CONVERTER_FORMAT_S32LE && CONFIG_PCM_CONVERTER_FORMAT_S24LE
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
-		ipc4_gtw_all & ~(ipc4_gtw_link | ipc4_gtw_alh | ipc4_gtw_host | ipc4_gtw_dmic),
-		ipc4_bidirection, audio_stream_copy},
+		ipc4_gtw_all & ~(ipc4_gtw_link | ipc4_gtw_alh | ipc4_gtw_host), ipc4_bidirection,
+		audio_stream_copy},
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
 		ipc4_gtw_link | ipc4_gtw_alh, ipc4_playback, pcm_convert_s24_to_s32 },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
-		ipc4_gtw_link | ipc4_gtw_alh | ipc4_gtw_dmic, ipc4_capture,
-		pcm_convert_s32_to_s24 },
+		ipc4_gtw_link | ipc4_gtw_alh, ipc4_capture, pcm_convert_s32_to_s24 },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
 		ipc4_gtw_host, ipc4_playback, pcm_convert_s32_to_s24 },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
 		ipc4_gtw_host, ipc4_capture, pcm_convert_s24_to_s32 },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE,
-		ipc4_gtw_all & ~ipc4_gtw_host, ipc4_bidirection, pcm_convert_s24_to_s32},
-	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE,
-		ipc4_gtw_host, ipc4_playback, audio_stream_copy},
-	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE,
-		ipc4_gtw_host, ipc4_capture, pcm_convert_s24_to_s32},
+		ipc4_gtw_all, ipc4_bidirection, pcm_convert_s24_to_s32},
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
-		ipc4_gtw_all & ~(ipc4_gtw_link | ipc4_gtw_alh | ipc4_gtw_host), ipc4_bidirection,
+		ipc4_gtw_all & ~(ipc4_gtw_link | ipc4_gtw_alh), ipc4_bidirection,
 		pcm_convert_s32_to_s24 },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
 		ipc4_gtw_link | ipc4_gtw_alh, ipc4_playback, pcm_convert_s32_to_s24_be },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
 		ipc4_gtw_link | ipc4_gtw_alh, ipc4_capture, pcm_convert_s32_to_s24 },
-	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
-		ipc4_gtw_host, ipc4_playback, pcm_convert_s32_to_s24 },
-	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE,
-		ipc4_gtw_host, ipc4_capture, pcm_convert_s32_to_s24_be },
 #endif
 #if CONFIG_PCM_CONVERTER_FORMAT_S24LE && CONFIG_PCM_CONVERTER_FORMAT_S16LE
 	{ SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S32_LE,
-		SOF_IPC_FRAME_S24_4LE,
-		ipc4_gtw_all & ~(ipc4_gtw_link | ipc4_gtw_alh | ipc4_gtw_host),
+		SOF_IPC_FRAME_S24_4LE, ipc4_gtw_all & ~(ipc4_gtw_link | ipc4_gtw_alh),
 		ipc4_bidirection, pcm_convert_s16_to_s24 },
 	{ SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S32_LE,
 		SOF_IPC_FRAME_S24_4LE, ipc4_gtw_link | ipc4_gtw_alh, ipc4_playback,
 		pcm_convert_s16_to_s32},
-	{ SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S32_LE,
-		SOF_IPC_FRAME_S24_4LE, ipc4_gtw_host,
-		ipc4_playback, pcm_convert_s16_to_s24 },
-	{ SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S16_LE, SOF_IPC_FRAME_S32_LE,
-		SOF_IPC_FRAME_S24_4LE, ipc4_gtw_host,
-		ipc4_capture, pcm_convert_s16_to_s32 },
 	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S16_LE,
-		SOF_IPC_FRAME_S16_LE, ipc4_gtw_all & ~ipc4_gtw_host,
-		ipc4_bidirection, pcm_convert_s24_to_s16 },
-	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S16_LE,
-		SOF_IPC_FRAME_S16_LE, ipc4_gtw_host, ipc4_playback, pcm_convert_s32_to_s16 },
-	{ SOF_IPC_FRAME_S32_LE, SOF_IPC_FRAME_S24_4LE, SOF_IPC_FRAME_S16_LE,
-		SOF_IPC_FRAME_S16_LE, ipc4_gtw_host, ipc4_capture, pcm_convert_s24_to_s16 },
+		SOF_IPC_FRAME_S16_LE, ipc4_gtw_all, ipc4_bidirection, pcm_convert_s24_to_s16 },
 #endif
 #if CONFIG_PCM_CONVERTER_FORMAT_S24_C24_AND_S24_C32
 	{ SOF_IPC_FRAME_S24_3LE, SOF_IPC_FRAME_S24_3LE, SOF_IPC_FRAME_S32_LE,

@@ -30,13 +30,13 @@ int apply_attenuation(struct comp_dev *dev, struct copier_data *cd,
 	ae_int32x2 sample;
 	ae_valign uu = AE_ZALIGN64();
 	ae_valign su = AE_ZALIGN64();
-	int remaining_samples = frame * audio_stream_get_channels(&sink->stream);
-	uint32_t *dst = audio_stream_get_rptr(&sink->stream);
+	int remaining_samples = frame * sink->stream.channels;
+	uint32_t *dst = sink->stream.r_ptr;
 	ae_int32x2 *in = (ae_int32x2 *)dst;
 	ae_int32x2 *out = (ae_int32x2 *)dst;
 
 	/* only support attenuation in format of 32bit */
-	switch (audio_stream_get_frm_fmt(&sink->stream)) {
+	switch (sink->stream.frame_fmt) {
 	case SOF_IPC_FRAME_S16_LE:
 		comp_err(dev, "16bit sample isn't supported by attenuation");
 		return -EINVAL;
@@ -66,8 +66,7 @@ int apply_attenuation(struct comp_dev *dev, struct copier_data *cd,
 
 		return 0;
 	default:
-		comp_err(dev, "unsupported format %d for attenuation",
-			 audio_stream_get_frm_fmt(&sink->stream));
+		comp_err(dev, "unsupported format %d for attenuation", sink->stream.frame_fmt);
 		return -EINVAL;
 	}
 }

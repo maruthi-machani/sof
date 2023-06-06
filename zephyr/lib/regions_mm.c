@@ -20,8 +20,10 @@ struct virtual_memory_heap
  * virtual first heaps.
  * Has to be initialized after calculations for regions is done in zephyr.
  */
-static int virtual_heaps_init(void)
+static int virtual_heaps_init(const struct device *unused)
 {
+	ARG_UNUSED(unused);
+
 	struct sys_mm_drv_region *virtual_memory_regions =
 		(struct sys_mm_drv_region *)sys_mm_drv_query_memory_regions();
 

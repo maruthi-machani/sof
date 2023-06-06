@@ -27,7 +27,6 @@
 #include <stdint.h>
 #include <ipc4/base-config.h>
 #include <ipc4/gateway.h>
-#include <ipc4/alh.h>
 
 #include <sof/compiler_attributes.h>
 #include <sof/audio/buffer.h>
@@ -227,6 +226,12 @@ struct ipc4_data_segment_enabled {
 	uint32_t data_seg_size;
 } __attribute__((packed, aligned(4)));
 
+/* One of copy_single_channel_cXX() to mux/demux channels into/from copier multi_endpoint_buffer */
+typedef void (* channel_copy_func)(struct audio_stream __sparse_cache *dst,
+				   int dst_channel,
+				   const struct audio_stream __sparse_cache *src,
+				   int src_channel, int frame_count);
+
 struct copier_data {
 	/*
 	 * struct ipc4_copier_module_cfg actually has variable size, but we
@@ -240,6 +245,7 @@ struct copier_data {
 
 	/* buffer to mux/demux data from/to multiple endpoint buffers for ALH multi-gateway case */
 	struct comp_buffer *multi_endpoint_buffer;
+	channel_copy_func copy_single_channel;
 
 	bool bsource_buffer;
 
@@ -257,30 +263,9 @@ struct copier_data {
 	uint64_t output_total_data_processed;
 	struct host_data *hd;
 	bool ipc_gtw;
-	struct dai_data *dd[IPC4_ALH_MAX_NUMBER_OF_GTW];
-	uint32_t channels[IPC4_ALH_MAX_NUMBER_OF_GTW];
-	uint32_t chan_map[IPC4_ALH_MAX_NUMBER_OF_GTW];
-	struct ipcgtw_data *ipcgtw_data;
 };
 
 int apply_attenuation(struct comp_dev *dev, struct copier_data *cd,
 		      struct comp_buffer __sparse_cache *sink, int frame);
-
-pcm_converter_func get_converter_func(const struct ipc4_audio_format *in_fmt,
-				      const struct ipc4_audio_format *out_fmt,
-				      enum ipc4_gateway_type type,
-				      enum ipc4_direction_type dir);
-
-struct comp_ipc_config;
-int create_endpoint_buffer(struct comp_dev *parent_dev,
-			   struct copier_data *cd,
-			   struct comp_ipc_config *config,
-			   const struct ipc4_copier_module_cfg *copier_cfg,
-			   enum ipc4_gateway_type type,
-			   bool create_multi_endpoint_buffer,
-			   int index);
-
-enum sof_ipc_stream_direction
-	get_gateway_direction(enum ipc4_connector_node_id_type node_id_type);
 
 #endif

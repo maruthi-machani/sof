@@ -106,7 +106,7 @@ struct ipc_comp_dev *ipc_get_ppl_comp(struct ipc *ipc, uint32_t pipeline_id, int
 	struct ipc_comp_dev *icd;
 	struct comp_buffer *buffer;
 	struct comp_dev *buff_comp;
-	struct list_item *clist, *blist;
+	struct list_item *clist;//, *blist;
 	struct ipc_comp_dev *next_ppl_icd = NULL;
 
 	list_for_item(clist, &ipc->comp_list) {
@@ -117,22 +117,23 @@ struct ipc_comp_dev *ipc_get_ppl_comp(struct ipc *ipc, uint32_t pipeline_id, int
 		/* first try to find the module in the pipeline */
 		if (dev_comp_pipe_id(icd->cd) == pipeline_id) {
 			struct list_item *buffer_list = comp_buffer_list(icd->cd, dir);
-			bool last_in_pipeline = true;
+			//bool last_in_pipeline = true;
 
 			/* The component has no buffer in the given direction */
 			if (list_is_empty(buffer_list))
 				return icd;
 
 			/* check all connected modules to see if they are on different pipelines */
-			list_for_item(blist, buffer_list) {
-				buffer = buffer_from_list(blist, dir);
+			//list_for_item(blist, buffer_list) {
+				buffer = buffer_from_list(buffer_list->next, dir);
 				buff_comp = buffer_get_comp(buffer, dir);
 
-				if (buff_comp && dev_comp_pipe_id(buff_comp) == pipeline_id)
-					last_in_pipeline = false;
-			}
+				//if (buff_comp && dev_comp_pipe_id(buff_comp) == pipeline_id)
+				//	last_in_pipeline = false;
+			//}
 			/* all connected components placed on another pipeline */
-			if (last_in_pipeline)
+			/* Next component is placed on another pipeline */
+			if (buff_comp && dev_comp_pipe_id(buff_comp) != pipeline_id)
 				next_ppl_icd = icd;
 		}
 	}
@@ -176,26 +177,6 @@ static void schedule_ipc_worker(void)
 
 	k_work_schedule(&ipc->z_delayed_work, K_USEC(IPC_PERIOD_USEC));
 #endif
-}
-
-void ipc_msg_send_direct(struct ipc_msg *msg, void *data)
-{
-	struct ipc *ipc = ipc_get();
-	k_spinlock_key_t key;
-	int ret;
-
-	key = k_spin_lock(&ipc->lock);
-
-	/* copy mailbox data to message if not already copied */
-	if (msg->tx_size > 0 && msg->tx_size <= SOF_IPC_MSG_MAX_SIZE &&
-	    msg->tx_data != data) {
-		ret = memcpy_s(msg->tx_data, msg->tx_size, data, msg->tx_size);
-		assert(!ret);
-	}
-
-	ipc_platform_send_msg_direct(msg);
-
-	k_spin_unlock(&ipc->lock, key);
 }
 
 void ipc_msg_send(struct ipc_msg *msg, void *data, bool high_priority)

@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # Generates header for which version is taken from (in order of precedence):
-#	1) .tarball-version file
-#	2) sof/versions.json
+# 	1) .tarball-version file
+#	2) git
 #
 # Version is checked during configuration step and for every target
 # that has check_version_h target as dependency
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.13)
 
 set(VERSION_CMAKE_PATH ${CMAKE_CURRENT_LIST_DIR}/version.cmake)
 
@@ -74,20 +74,12 @@ endif()
 
 message(STATUS "GIT_TAG / GIT_LOG_HASH : ${GIT_TAG} / ${GIT_LOG_HASH}")
 
-file(READ "${SOF_ROOT_SOURCE_DIRECTORY}/versions.json" versions_json)
+string(REGEX MATCH "^v([0-9]+)[.]([0-9]+)([.]([0-9]+))?" ignored "${GIT_TAG}")
+set(SOF_MAJOR ${CMAKE_MATCH_1})
+set(SOF_MINOR ${CMAKE_MATCH_2})
+set(SOF_MICRO ${CMAKE_MATCH_4})
 
-message(VERBOSE "${SOF_ROOT_SOURCE_DIRECTORY}/versions.json=${versions_json}")
-
-string(JSON SOF_MAJOR GET "${versions_json}" SOF MAJOR)
-string(JSON SOF_MINOR GET "${versions_json}" SOF MINOR)
-string(JSON SOF_MICRO ERROR_VARIABLE micro_error
-                      GET "${versions_json}" SOF MICRO)
-
-# Don't confuse "error not found" with "version not found"
-if(NOT "${micro_error}" STREQUAL "NOTFOUND")
-	message(STATUS "versions.json: ${micro_error}, defaulting to 0")
-	# TODO: default this to .99 on the main, never released branch like zephyr does
-	# Keep this default SOF_MICRO the same as the one in xtensa-build-zephyr.py
+if(NOT SOF_MICRO MATCHES "^[0-9]+$")
 	set(SOF_MICRO 0)
 endif()
 
